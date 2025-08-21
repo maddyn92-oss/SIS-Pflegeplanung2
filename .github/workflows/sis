@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pflegeprozess-Generator (SIS)</title>
+    <!-- Tailwind CSS CDN für schnelles Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font für eine moderne Typografie -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF CDN für PDF-Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Grundschriftart für die gesamte Seite */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6 md:p-10">
+    <div class="container mx-auto max-w-3xl">
+        <h1 class="text-4xl font-extrabold text-center text-gray-900 mb-8 mt-4 md:text-5xl">Pflegeprozess-Generator (SIS)</h1>
+
+        <form id="sis-form" class="bg-white p-8 rounded-xl shadow-2xl space-y-6">
+            <!-- Auswahl des Pflegesettings -->
+            <div>
+                <label for="care_setting" class="block text-gray-700 text-sm font-bold mb-2">Pflegesetting auswählen:</label>
+                <select id="care_setting" name="care_setting"
+                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="ambulante_pflege">Ambulante Pflege</option>
+                    <option value="pflegeheim">Alten-/Pflegeheim</option>
+                    <option value="krankenhaus">Krankenhaus</option>
+                </select>
+            </div>
+
+            <!-- Wunsch-Besuchszeit -->
+            <div>
+                <label for="wunsch_besuchszeit" class="block text-gray-700 text-sm font-bold mb-2">Wunsch-Besuchszeit:</label>
+                <input type="time" name="wunsch_besuchszeit"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 placeholder-gray-500">
+            </div>
+
+            <!-- Alter (Jahre) -->
+            <div>
+                <label for="age" class="block text-gray-700 text-sm font-bold mb-2">Alter (Jahre):</label>
+                <input type="number" name="age" id="age_input"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                       placeholder="z.B. 75">
+            </div>
+
+            <!-- Pflegegrad -->
+            <div>
+                <label for="pflegegrad" class="block text-gray-700 text-sm font-bold mb-2">Pflegegrad:</label>
+                <input type="text" name="pflegegrad" id="pflegegrad_input" list="pflegegrad_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 bg-gray-50"
+                       placeholder="z.B. Pflegegrad 3">
+                <datalist id="pflegegrad_list">
+                    <option value="Pflegegrad 1">
+                    <option value="Pflegegrad 2">
+                    <option value="Pflegegrad 3">
+                    <option value="Pflegegrad 4">
+                    <option value="Pflegegrad 5">
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Kognition und Kommunikation -->
+            <div>
+                <label for="kognitive_fähigkeiten_input" class="block text-gray-700 text-sm font-bold mb-2">Kognitive Fähigkeiten & Kommunikation:</label>
+                <input type="text" name="kognitive_fähigkeiten" id="kognitive_fähigkeiten_input" list="kognitive_fähigkeiten_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-orange-50"
+                       placeholder="">
+                <datalist id="kognitive_fähigkeiten_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Mobilität und Bewegung -->
+            <div>
+                <label for="mobilität_input" class="block text-gray-700 text-sm font-bold mb-2">Mobilität & Bewegung:</label>
+                <input type="text" name="mobilität" id="mobilität_input" list="mobilität_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-yellow-50"
+                       placeholder="">
+                <datalist id="mobilität_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Krankheitsbezogene Anforderungen & Belastungen (Mehrfachauswahl per Komma) -->
+            <div>
+                <label for="krankheiten_input" class="block text-gray-700 text-sm font-bold mb-2">Krankheitsbezogene Anforderungen & Belastungen:</label>
+                <input type="text" id="krankheiten_input" list="krankheiten_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-green-50"
+                       placeholder="">
+                <datalist id="krankheiten_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+                <div id="selected_krankheiten_tags" class="flex flex-wrap gap-2 mt-2"></div>
+                <input type="hidden" name="krankheiten"> <!-- Verstecktes Feld zum Speichern der ausgewählten Werte -->
+            </div>
+
+            <!-- Eingabefeld für Selbstversorgung (Mehrfachauswahl) -->
+            <div>
+                <label for="selbstversorgung_input" class="block text-gray-700 text-sm font-bold mb-2">Selbstversorgung:</label>
+                <input type="text" id="selbstversorgung_input" list="selbstversorgung_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-purple-50"
+                       placeholder="">
+                <datalist id="selbstversorgung_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+                <div id="selected_selbstversorgung_tags" class="flex flex-wrap gap-2 mt-2"></div>
+                <input type="hidden" name="selbstversorgung"> <!-- Verstecktes Feld zum Speichern der ausgewählten Werte -->
+            </div>
+
+            <!-- Eingabefeld für Duschen (Häufigkeit) -->
+            <div>
+                <label for="duschen_haeufigkeit_input" class="block text-gray-700 text-sm font-bold mb-2">Duschen (Häufigkeit):</label>
+                <input type="text" name="duschen_haeufigkeit" id="duschen_haeufigkeit_input" list="duschen_haeufigkeit_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                       placeholder="">
+                <datalist id="duschen_haeufigkeit_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Baden (Häufigkeit) -->
+            <div>
+                <label for="baden_haeufigkeit_input" class="block text-gray-700 text-sm font-bold mb-2">Baden (Häufigkeit):</label>
+                <input type="text" name="baden_haeufigkeit" id="baden_haeufigkeit_input" list="baden_haeufigkeit_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-indigo-50"
+                       placeholder="">
+                <datalist id="baden_haeufigkeit_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Hauswirtschaftliche Unterstützung (Mehrfachauswahl) -->
+            <div id="hauswirtschaftliche_unterstuetzung_section">
+                <label for="hauswirtschaftliche_unterstuetzung_input" class="block text-gray-700 text-sm font-bold mb-2">Hauswirtschaftliche Unterstützung:</label>
+                <input type="text" id="hauswirtschaftliche_unterstuetzung_input" list="hauswirtschaftliche_unterstuetzung_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-red-50"
+                       placeholder="">
+                <datalist id="hauswirtschaftliche_unterstuetzung_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+                <div id="selected_hauswirtschaftliche_unterstuetzung_tags" class="flex flex-wrap gap-2 mt-2"></div>
+                <input type="hidden" name="hauswirtschaftliche_unterstuetzung"> <!-- Hidden input to store selected values -->
+            </div>
+
+            <!-- Eingabefeld für Häufigkeit der Hauswirtschaftlichen Unterstützung -->
+            <div id="hauswirtschaftliche_frequenz_section">
+                <label for="hauswirtschaftliche_frequenz_input" class="block text-gray-700 text-sm font-bold mb-2">Häufigkeit der Hauswirtschaftlichen Unterstützung:</label>
+                <input type="text" name="hauswirtschaftliche_frequenz" id="hauswirtschaftliche_frequenz_input" list="hauswirtschaftliche_frequenz_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-red-100"
+                       placeholder="">
+                <datalist id="hauswirtschaftliche_frequenz_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Leben in sozialen Beziehungen -->
+            <div>
+                <label for="soziale_beziehungen_input" class="block text-gray-700 text-sm font-bold mb-2">Leben in sozialen Beziehungen:</label>
+                <input type="text" name="soziale_beziehungen" id="soziale_beziehungen_input" list="soziale_beziehungen_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                       placeholder="">
+                <datalist id="soziale_beziehungen_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <!-- Eingabefeld für Wohnen (Optional, da nicht direkt SIS Kernfeld aber oft relevant) -->
+            <div>
+                <label for="wohnen_input" class="block text-gray-700 text-sm font-bold mb-2">Wohnen (optional):</label>
+                <input type="text" name="wohnen" id="wohnen_input" list="wohnen_list"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-red-50"
+                       placeholder="">
+                <datalist id="wohnen_list">
+                    <!-- Optionen werden von JS gefüllt -->
+                </datalist>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out shadow-md">
+                Pflegeprozess Generieren
+            </button>
+        </form>
+
+        <div id="output" class="mt-8">
+            <!-- Generierter Pflegeprozess wird hier angezeigt -->
+        </div>
+    </div>
+
+    <script>
+        // Datenbank der Schlagwörter für jede SIS-Kategorie und jedes Setting
+        const schlagwoerter = {
+            "ambulante_pflege": {
+                "kognitive_fähigkeiten": ["klar und adäquat", "leicht eingeschränkt", "moderater demenzieller Wandel", "stark desorientiert", "apathisch/eingeschränkte Reaktion"],
+                "mobilität": ["völlig selbstständig", "eingeschränkt (Hilfsmittel)", "gehfähig mit Unterstützung", "rollstuhlabhängig (aktiv)", "rollstuhlabhängig (passiv)", "bettlägerig"],
+                "krankheiten": [
+                    "Adipositas", "AIDS", "Akute Niereninsuffizienz", "Akute Pankreatitis", "Akute respiratorische Insuffizienz", "Alkoholismus", "Allergien", "ALS", "Angina Pectoris", "Anämie", "Anorexie", "Angststörung", "Apoplex", "Appendizitis", "Arthritis", "Arthrose", "Asthma", "Atherosklerose", "Blasenentzündung", "Bluthochdruck", "Bursitis", "COPD", "Chronische Bronchitis", "Chronische Niereninsuffizienz", "Chronische Schmerzen", "Chronische Wunden", "Colitis Ulcerosa", "Darmkrebs", "Darmverschluss", "Demenz", "Depression", "Diabetes", "Epilepsie", "Gallensteine", "Gastritis", "Gicht", "Glaukom", "Hepatitis", "Herzinfarkt", "Herzinsuffizienz", "Hyperthyreose", "Hypothyreose", "Inkontinenz", "Ischämie", "Krebs", "Leberzirrhose", "Lungenentzündung", "Lungenkrebs", "Magengeschwür", "Migräne", "Multiple Sklerose", "Mukoviszidose", "Myasthenia Gravis", "Nierensteine", "Ödeme", "Osteomyelitis", "Osteoporose", "Parkinson", "Periphere arterielle Verschlusskrankheit (PAVK)", "Pneumothorax", "Posttraumatische Belastungsstörung (PTBS)", "Psoriasis", "Rheuma", "Schlaganfall", "Schilddrüsenüberfunktion", "Schilddrüsenunterfunktion", "Schizophrenie", "Sepsis", "Sichelzellanämie", "Skoliose", "Sozialphobie", "Spinalkanalstenose", "Thrombose", "Tuberkulose", "Typ-1-Diabetes", "Typ-2-Diabetes", "Ulcus cruris", "Ulkus", "Untergewicht", "Vaskulitis", "Venenleiden", "Verstopfung", "Virusinfektion", "Vorhofflimmern", "Zöliakie", "Zystische Fibrose", "Schwindel", "Apraxie", "Aphasie", "Dysphagie", "Kontraktur", "Dekubitus", "Gangstörung", "Harnwegsinfekt", "Herzrhythmusstörung", "Hyperglykämie", "Hypoglykämie", "Insomnie", "Kachexie", "Katarakt", "Kopfschmerzen", "Krampfanfall", "Mangelernährung", "Nervenschmerzen", "Obstipation", "Pneumonie", "Polyneuropathie", "Restless Legs Syndrom", "Schlafapnoe", "Tinnitus", "Tremor", "Verwirrtheitszustand", "ADHS", "Autismus-Spektrum-Störung", "Bipolare Störung", "Borderline-Persönlichkeitsstörung", "Burnout-Syndrom", "Chronisches Fatigue-Syndrom", "Cluster-Kopfschmerz", "Cystische Fibrose", "Darmdivertikulose", "Darmpolypen", "Darmulzera", "Dermatitis", "Diabetische Retinopathie", "Dystonie", "Endometriose", "Fibromyalgie", "Gastroösophageale Refluxkrankheit (GERD)", "Glomerulonephritis", "Hämorrhoiden", "Harninkontinenz", "Harnsteine", "Hautkrebs", "Hörverlust", "Huntington-Krankheit", "Hydrozephalus", "Impfschaden", "Impotenz", "Infertilität", "Influenza", "Ischias", "Karpaltunnelsyndrom", "Kiefergelenksdysfunktion", "Klaustrophobie", "Klippel-Feil-Syndrom", "Kohlenmonoxidvergiftung", "Krampfadern", "Laktoseintoleranz", "Legionellose", "Leukämie", "Lupus erythematodes", "Lyme-Borreliose", "Lymphödem", "Makuladegeneration", "Mastozytose", "Melanom", "Ménière-Krankheit", "Morbus Crohn", "Morbus Parkinson", "Morbus Wilson", "MS", "Narkolepsie", "Nekrotisierende Fasziitis", "Netzhautablösung", "Neurodermitis", "Nierensteine", "Nierenversagen", "Nierenzellkarzinom", "Nystagmus", "Obstruktive Schlafapnoe", "Ösophaguskarzinom", "Ohrgeräusche", "Oophoritis", "Optikusneuritis", "Oraler Lichen planus", "Orchitis", "Osteoarthritis", "Osteomalazie", "Osteosarkom", "Otitis media", "Ovarialkarzinom", "Pankreaskarzinom", "Paralyse", "Parodontitis", "Pemphigus", "Perikarditis", "Peritonitis", "Phlebitis", "Pneumokoniosen", "Poliomyelitis", "Polymyalgia rheumatica", "Post-Polio-Syndrom", "Präeklampsie", "Prostatakarzinom", "Pseudogicht", "Pulmonale Hypertonie", "Pyelonephritis", "Raynaud-Syndrom", "Reizdarmsyndrom", "Retinoblastom", "Retinopathie", "Rhabdomyolyse", "Rosazea", "Rotaviren-Infektion", "Röteln", "Salmonellose", "Sarkoidose", "Scharlach", "Schlafstörungen", "Schluckstörung", "Schuppenflechte", "Sklerodermie", "Spondylitis ankylosans", "Struma", "Synkope", "Systemischer Lupus erythematodes", "Tetanus", "Thalassämie", "Thrombophlebitis", "Thrombozytopenie", "Tollwut", "Tourette-Syndrom", "Transitorische ischämische Attacke (TIA)", "Trigeminusneuralgie", "Trommelfellperforation", "Tuberculose", "Typhus", "Ulcus duodeni", "Urtikaria", "Uveitis", "Varizellen", "Vaskuläre Demenz", "Vertigo", "Vitiligo", "Vogt-Koyanagi-Harada-Syndrom", "Volvulus", "Von Willebrand-Jürgens-Syndrom", "Wundrose", "Zahnschmerzen", "Zerebralparese", "Zoster"
+                ],
+                "selbstversorgung": [
+                    "völlig selbstständig", "eingeschränkt (Waschen)", "eingeschränkt (Kleiden)", "eingeschränkt (Essen/Trinken)", "eingeschränkt (Toilettengang)",
+                    "teilweise Unterstützung (Waschen)", "teilweise Unterstützung (Kleiden)", "teilweise Unterstützung (Essen/Trinken)", "teilweise Unterstützung (Toilettengang)",
+                    "umfassende Unterstützung (Waschen)", "umfassende Unterstützung (Kleiden)", "umfassende Unterstützung (Essen/Trinken)", "umfassende Unterstützung (Toilettengang)",
+                    "komplett übernommen"
+                ],
+                "duschen_haeufigkeit": ["täglich", "2x wöchentlich", "1x wöchentlich", "nach Bedarf", "nicht möglich"],
+                "baden_haeufigkeit": ["1x wöchentlich", "2x wöchentlich", "nach Bedarf", "nicht möglich"],
+                "hauswirtschaftliche_unterstuetzung": [
+                    "Einkauf", "Wohnungsreinigung", "Wäschepflege", "Mahlzeiten zubereiten", "Müllentsorgung", "Begleitung außer Haus",
+                    "Gartenarbeit", "Tierversorgung", "Botengänge", "Fenster putzen", "Bettwäsche wechseln", "Haustiere füttern"
+                ],
+                "hauswirtschaftliche_frequenz": ["täglich", "mehrmals wöchentlich", "wöchentlich", "2x wöchentlich", "1x wöchentlich", "monatlich", "nach Bedarf"],
+                "soziale_beziehungen": ["sehr aktiv", "eingeschränkt aber selbstständig", "wenig Kontakte", "sozial isoliert", "keine Kontakte"],
+                "wohnen": [
+                    "eigenes Zuhause (alleine)", "eigenes Zuhause (mit Partner/Ehepartner)", "eigenes Zuhause (mit Angehörigen)",
+                    "betreutes Wohnen", "Senioren-WG", "Pflegeheim (Einzelzimmer)", "Pflegeheim (Mehrbettzimmer)", "Krankenhaus"
+                ]
+            },
+            "pflegeheim": {
+                "kognitive_fähigkeiten": ["klar und adäquat", "leicht eingeschränkt", "moderater demenzieller Wandel", "stark desorientiert", "apathisch/eingeschränkte Reaktion"],
+                "mobilität": ["völlig selbstständig", "eingeschränkt (Hilfsmittel)", "gehfähig mit Unterstützung", "rollstuhlabhängig (aktiv)", "rollstuhlabhängig (passiv)", "bettlägerig"],
+                "krankheiten": [
+                    "Adipositas", "AIDS", "Akute Niereninsuffizienz", "Akute Pankreatitis", "Akute respiratorische Insuffizienz", "Alkoholismus", "Allergien", "ALS", "Angina Pectoris", "Anämie", "Anorexie", "Angststörung", "Apoplex", "Appendizitis", "Arthritis", "Arthrose", "Asthma", "Atherosklerose", "Blasenentzündung", "Bluthochdruck", "Bursitis", "COPD", "Chronische Bronchitis", "Chronische Niereninsuffizienz", "Chronische Schmerzen", "Chronische Wunden", "Colitis Ulcerosa", "Darmkrebs", "Darmverschluss", "Demenz", "Depression", "Diabetes", "Epilepsie", "Gallensteine", "Gastritis", "Gicht", "Glaukom", "Hepatitis", "Herzinfarkt", "Herzinsuffizienz", "Hyperthyreose", "Hypothyreose", "Inkontinenz", "Ischämie", "Krebs", "Leberzirrhose", "Lungenentzündung", "Lungenkrebs", "Magengeschwür", "Migräne", "Multiple Sklerose", "Mukoviszidose", "Myasthenia Gravis", "Nierensteine", "Ödeme", "Osteomyelitis", "Osteoporose", "Parkinson", "Periphere arterielle Verschlusskrankheit (PAVK)", "Pneumothorax", "Posttraumatische Belastungsstörung (PTBS)", "Psoriasis", "Rheuma", "Schlaganfall", "Schilddrüsenüberfunktion", "Schilddrüsenunterfunktion", "Schizophrenie", "Sepsis", "Sichelzellanämie", "Skoliose", "Sozialphobie", "Spinalkanalstenose", "Thrombose", "Tuberkulose", "Typ-1-Diabetes", "Typ-2-Diabetes", "Ulcus cruris", "Ulkus", "Untergewicht", "Vaskulitis", "Venenleiden", "Verstopfung", "Virusinfektion", "Vorhofflimmern", "Zöliakie", "Zystische Fibrose", "Schwindel", "Apraxie", "Aphasie", "Dysphagie", "Kontraktur", "Dekubitus", "Gangstörung", "Harnwegsinfekt", "Herzrhythmusstörung", "Hyperglykämie", "Hypoglykämie", "Insomnie", "Kachexie", "Katarakt", "Kopfschmerzen", "Krampfanfall", "Mangelernährung", "Nervenschmerzen", "Obstipation", "Pneumonie", "Polyneuropathie", "Restless Legs Syndrom", "Schlafapnoe", "Tinnitus", "Tremor", "Verwirrtheitszustand"
+                ],
+                "selbstversorgung": [
+                    "völlig selbstständig", "eingeschränkt (Waschen)", "eingeschränkt (Kleiden)", "eingeschränkt (Essen/Trinken)", "eingeschränkt (Toilettengang)",
+                    "teilweise Unterstützung (Waschen)", "teilweise Unterstützung (Kleiden)", "teilweise Unterstützung (Essen/Trinken)", "teilweise Unterstützung (Toilettengang)",
+                    "umfassende Unterstützung (Waschen)", "umfassende Unterstützung (Kleiden)", "umfassende Unterstützung (Essen/Trinken)", "umfassende Unterstützung (Toilettengang)",
+                    "komplett übernommen"
+                ],
+                "duschen_haeufigkeit": ["täglich", "2x wöchentlich", "1x wöchentlich", "nach Bedarf", "nicht möglich"],
+                "baden_haeufigkeit": ["1x wöchentlich", "2x wöchentlich", "nach Bedarf", "nicht möglich"],
+                "hauswirtschaftliche_unterstuetzung": [
+                    "Einkauf", "Wohnungsreinigung", "Wäschepflege", "Mahlzeiten zubereiten", "Müllentsorgung", "Begleitung außer Haus",
+                    "Gartenarbeit", "Tierversorgung", "Botengänge", "Fenster putzen", "Bettwäsche wechseln", "Haustiere füttern"
+                ],
+                "hauswirtschaftliche_frequenz": ["täglich", "mehrmals wöchentlich", "wöchentlich", "2x wöchentlich", "1x wöchentlich", "monatlich", "nach Bedarf"],
+                "soziale_beziehungen": ["sehr aktiv", "eingeschränkt aber selbstständig", "wenig Kontakte", "sozial isoliert", "keine Kontakte"],
+                "wohnen": [
+                    "eigenes Zuhause (alleine)", "eigenes Zuhause (mit Partner/Ehepartner)", "eigenes Zuhause (mit Angehörigen)",
+                    "betreutes Wohnen", "Senioren-WG", "Pflegeheim (Einzelzimmer)", "Pflegeheim (Mehrbettzimmer)", "Krankenhaus"
+                ]
+            },
+            "krankenhaus": {
+                "kognitive_fähigkeiten": ["klar und adäquat", "leicht eingeschränkt", "moderater demenzieller Wandel", "stark desorientiert", "apathisch/eingeschränkte Reaktion"],
+                "mobilität": ["völlig selbstständig", "eingeschränkt (Hilfsmittel)", "gehfähig mit Unterstützung", "rollstuhlabhängig (aktiv)", "rollstuhlabhängig (passiv)", "bettlägerig"],
+                "krankheiten": [
+                    "Adipositas", "AIDS", "Akute Niereninsuffizienz", "Akute Pankreatitis", "Akute respiratorische Insuffizienz", "Alkoholismus", "Allergien", "ALS", "Angina Pectoris", "Anämie", "Anorexie", "Angststörung", "Apoplex", "Appendizitis", "Arthritis", "Arthrose", "Asthma", "Atherosklerose", "Blasenentzündung", "Bluthochdruck", "Bursitis", "COPD", "Chronische Bronchitis", "Chronische Niereninsuffizienz", "Chronische Schmerzen", "Chronische Wunden", "Colitis Ulcerosa", "Darmkrebs", "Darmverschluss", "Demenz", "Depression", "Diabetes", "Epilepsie", "Gallensteine", "Gastritis", "Gicht", "Glaukom", "Hepatitis", "Herzinfarkt", "Herzinsuffizienz", "Hyperthyreose", "Hypothyreose", "Inkontinenz", "Ischämie", "Krebs", "Leberzirrhose", "Lungenentzündung", "Lungenkrebs", "Magengeschwür", "Migräne", "Multiple Sklerose", "Mukoviszidose", "Myasthenia Gravis", "Nierensteine", "Ödeme", "Osteomyelitis", "Osteoporose", "Parkinson", "Periphere arterielle Verschlusskrankheit (PAVK)", "Pneumothorax", "Posttraumatische Belastungsstörung (PTBS)", "Psoriasis", "Rheuma", "Schlaganfall", "Schilddrüsenüberfunktion", "Schilddrüsenunterfunktion", "Schizophrenie", "Sepsis", "Sichelzellanämie", "Skoliose", "Sozialphobie", "Spinalkanalstenose", "Thrombose", "Tuberkulose", "Typ-1-Diabetes", "Typ-2-Diabetes", "Ulcus cruris", "Ulkus", "Untergewicht", "Vaskulitis", "Venenleiden", "Verstopfung", "Virusinfektion", "Vorhofflimmern", "Zöliakie", "Zystische Fibrose", "Schwindel", "Apraxie", "Aphasie", "Dysphagie", "Kontraktur", "Dekubitus", "Gangstörung", "Harnwegsinfekt", "Herzrhythmusstörung", "Hyperglykämie", "Hypoglykämie", "Insomnie", "Kachexie", "Katarakt", "Kopfschmerzen", "Krampfanfall", "Mangelernährung", "Nervenschmerzen", "Obstipation", "Pneumonie", "Polyneuropathie", "Restless Legs Syndrom", "Schlafapnoe", "Tinnitus", "Tremor", "Verwirrtheitszustand"
+                ],
+                "selbstversorgung": [
+                    "völlig selbstständig", "eingeschränkt (Waschen)", "eingeschränkt (Kleiden)", "eingeschränkt (Essen/Trinken)", "eingeschränkt (Toilettengang)",
+                    "teilweise Unterstützung (Waschen)", "teilweise Unterstützung (Kleiden)", "teilweise Unterstützung (Essen/Trinken)", "teilweise Unterstützung (Toilettengang)",
+                    "umfassende Unterstützung (Waschen)", "umfassende Unterstützung (Kleiden)", "umfassende Unterstützung (Essen/Trinken)", "umfassende Unterstützung (Toilettengang)",
+                    "komplett übernommen"
+                ],
+                "duschen_haeufigkeit": ["täglich", "2x wöchentlich", "1x wöchentlich", "nach Bedarf", "nicht möglich"],
+                "baden_haeufigkeit": ["1x wöchentlich", "2x wöchentlich", "nach Bedarf", "nicht möglich"],
+                "hauswirtschaftliche_unterstuetzung": [
+                    // Keine Optionen, da Feld ausgeblendet wird
+                ],
+                "hauswirtschaftliche_frequenz": ["nicht relevant"], // Wird ausgeblendet
+                "soziale_beziehungen": ["sehr aktiv", "eingeschränkt aber selbstständig", "wenig Kontakte", "sozial isoliert", "keine Kontakte"],
+                "wohnen": [
+                    "eigenes Zuhause (alleine)", "eigenes Zuhause (mit Partner/Ehepartner)", "eigenes Zuhause (mit Angehörigen)",
+                    "betreutes Wohnen", "Senioren-WG", "Pflegeheim (Einzelzimmer)", "Pflegeheim (Mehrbettzimmer)", "Krankenhaus"
+                ]
+            }
+        };
+
+        // Farbzuordnung für die Anzeige der generierten Abschnitte
+        const farben = {
+            "kognitive_fähigkeiten": "#FDBA74", // Tailwind orange-300
+            "mobilität": "#FDE68A", // Tailwind yellow-300
+            "krankheiten": "#B4E5AF", // Tailwind green-300
+            "selbstversorgung": "#d8b4fe", // Tailwind purple-300 (ähnlich #9b59b6)
+            "duschen_haeufigkeit": "#90CDF4", // Light Blue for Shower
+            "baden_haeufigkeit": "#A78BFA", // Light Purple for Bath
+            "hauswirtschaftliche_unterstuetzung": "#FCA5A5", // Tailwind red-300 (Hauswirtschaft)
+            "hauswirtschaftliche_frequenz": "#FCA5A5", // Same as HWH for consistency
+            "soziale_beziehungen": "#93C5FD", // Tailwind blue-300
+            "wohnen": "#FCA5A5" // Tailwind red-300 (Wohnen, kann gleiche Farbe wie Hauswirtschaft haben oder angepasst werden)
+        };
+
+        // Datenbank der Pflegemaßnahmen, basierend auf den Schlagwörtern
+        // Jede Maßnahme hat jetzt ein 'time' (in Minuten) und einen 'personnelType'
+        const pflegeMassnahmen = {
+            "ambulante_pflege": {
+                "kognitive_fähigkeiten": {
+                    "klar und adäquat": [
+                        { text: "Anleitung und Motivation zur kognitiven Aktivität (z.B. Lesen, leichte Spiele)", time: 10, personnelType: "PP" },
+                        { text: "Gesprächsangebote zur Aufrechterhaltung der Kommunikationsfähigkeit", time: 10, personnelType: "PP" }
+                    ],
+                    "leicht eingeschränkt": [
+                        { text: "Anleitung und Unterstützung bei Gedächtnisübungen", time: 15, personnelType: "PP" },
+                        { text: "Bereitstellung und Erklärung von Orientierungshilfen (z.B. Tagesplan, große Uhr)", time: 5, personnelType: "PP" },
+                        { text: "Klare und einfache Kommunikation verwenden", time: 5, personnelType: "PP" }
+                    ],
+                    "moderater demenzieller wandel": [
+                        { text: "Strukturierung des Tagesablaufs und feste Routinen etablieren", time: 10, personnelType: "PP" },
+                        { text: "Geduldige und ruhige Kommunikation, nonverbale Signale beachten", time: 10, personnelType: "PP" },
+                        { text: "Anleitung von Angehörigen im Umgang mit demenziellen Veränderungen", time: 15, personnelType: "PFK" }
+                    ],
+                    "stark desorientiert": [
+                        { text: "Regelmäßige Reorientierung (Person, Ort, Zeit) in kurzen, einfachen Sätzen", time: 10, personnelType: "PP" },
+                        { text: "Sicherstellung einer reizarmen und vertrauten Umgebung", time: 5, personnelType: "PP" },
+                        { text: "Engmaschige Überwachung zur Sturz- und Weglaufprophylaxe", time: 15, personnelType: "PP" }
+                    ],
+                    "apathisch/eingeschränkte reaktion": [
+                        { text: "Anbieten von Basaler Stimulation (Berührung, Musik, Gerüche)", time: 15, personnelType: "PP" },
+                        { text: "Beobachtung und Dokumentation von Reaktionen und Ausdrucksformen", time: 5, personnelType: "PP" },
+                        { text: "Anleitung von Angehörigen zur Aktivierung und Kommunikation", time: 10, personnelType: "PFK" }
+                    ]
+                },
+                "mobilität": {
+                    "völlig selbstständig": [
+                        { text: "Beratung zur Erhaltung der Mobilität und Sturzprophylaxe", time: 10, personnelType: "PP" }
+                    ],
+                    "eingeschränkt (hilfsmittel)": [
+                        { text: "Anleitung und Unterstützung beim sicheren Gebrauch von Hilfsmitteln (Rollator, Gehstock)", time: 10, personnelType: "PP" },
+                        { text: "Beratung zur Beseitigung von Stolperfallen im häuslichen Umfeld", time: 10, personnelType: "PFK" },
+                        { text: "Motivation zu regelmäßigen Gehübungen im Rahmen der Möglichkeiten", time: 15, personnelType: "PP" }
+                    ],
+                    "gehfähig mit unterstützung": [
+                        { text: "Begleitung und Hilfestellung beim Gehen und Stehen", time: 15, personnelType: "PP" },
+                        { text: "Anleitung zu einfachen Mobilisationsübungen im Stehen/Sitzen", time: 10, personnelType: "PP" }
+                    ],
+                    "rollstuhlabhängig (aktiv)": [
+                        { text: "Anleitung und Unterstützung beim Transfer in/aus dem Rollstuhl", time: 15, personnelType: "PP" },
+                        { text: "Förderung der aktiven Rollstuhlnutzung und Bewegung im Raum", time: 10, personnelType: "PP" },
+                        { text: "Hautinspektion an druckgefährdeten Stellen (Gesäß, Oberschenkel)", time: 5, personnelType: "PP" }
+                    ],
+                    "rollstuhlabhängig (passiv)": [
+                        { text: "Sichere Transfers gewährleisten (z.B. mit Lifter, 2-Personen-Transfer)", time: 20, personnelType: "PP" },
+                        { text: "Engmaschige Hautkontrolle zur Vermeidung von Dekubitus und Druckstellen", time: 10, personnelType: "PP" },
+                        { text: "Regelmäßige Positionswechsel nach individuellem Plan (alle 2-4 Stunden)", time: 15, personnelType: "PP" }
+                    ],
+                    "bettlägerig": [
+                        { text: "Konsequente Dekubitusprophylaxe (Umlagerung nach Plan, Einsatz von Hilfsmitteln)", time: 20, personnelType: "PP" },
+                        { text: "Passive Bewegungsübungen zur Gelenkerhaltung und Durchblutungsförderung", time: 15, personnelType: "PP" },
+                        { text: "Umfassende Hautpflege und -inspektion", time: 10, personnelType: "PP" },
+                        { text: "Atemtherapie zur Pneumonieprophylaxe (z.B. tiefe Atemzüge anleiten)", time: 10, personnelType: "PFK" }
+                    ]
+                },
+                "selbstversorgung": {
+                    "völlig selbstständig": [
+                        { text: "Ressourcen erhalten und fördern", time: 5, personnelType: "PP" },
+                        { text: "Informationen zur Gesundheitsförderung anbieten", time: 5, personnelType: "PP" }
+                    ],
+                    "eingeschränkt (waschen)": [
+                        { text: "Teilweise Unterstützung bei der Körperpflege (z.B. Rücken, Füße, Intimbereich)", time: 15, personnelType: "PP" },
+                        { text: "Anleitung zur selbstständigen Durchführung erreichbarer Bereiche", time: 5, personnelType: "PP" },
+                        { text: "Gezielte Mund- und Zahnpflege unterstützen", time: 5, personnelType: "PP" }
+                    ],
+                    "eingeschränkt (kleiden)": [
+                        { text: "Hilfestellung beim An- und Auskleiden, besonders bei schwer erreichbaren Kleidungsstücken", time: 10, personnelType: "PP" },
+                        { text: "Anbieten von leicht handhabbarer Kleidung", time: 5, personnelType: "PP" }
+                    ],
+                    "eingeschränkt (essen/trinken)": [
+                        { text: "Mahlzeiten anrichten und bei Bedarf zerkleinern", time: 10, personnelType: "PP" },
+                        { text: "Kontrolle der ausreichenden Flüssigkeitszufuhr", time: 5, personnelType: "PP" },
+                        { text: "Unterstützung beim Essen mit Besteck oder beim Zuführen kleiner Mengen", time: 15, personnelType: "PP" }
+                    ],
+                    "eingeschränkt (toilettengang)": [
+                        { text: "Begleitung zur Toilette und Hilfestellung beim Transfer", time: 10, personnelType: "PP" },
+                        { text: "Bereitstellung von Urinflasche/Bettschüssel bei Bedarf", time: 5, personnelType: "PP" },
+                        { text: "Kontrolle der Inkontinenzmaterialien und Beratung", time: 5, personnelType: "PP" }
+                    ],
+                    "teilweise unterstützung (waschen)": [
+                        { text: "Verbale Anleitung und partielle Hilfe bei der Körperpflege (z.B. Waschen des Oberkörpers)", time: 20, personnelType: "PP" },
+                        { text: "Sicherstellung der benötigten Utensilien und Privatsphäre", time: 5, personnelType: "PP" }
+                    ],
+                    "teilweise unterstützung (kleiden)": [
+                        { text: "Anregung zur eigenständigen Kleiderwahl und Unterstützung bei komplexen Handlungen (Knöpfe, Reißverschlüsse)", time: 15, personnelType: "PP" }
+                    ],
+                    "teilweise unterstützung (essen/trinken)": [
+                        { text: "Mahlzeiten attraktiv anrichten und Mundpflege anbieten", time: 15, personnelType: "PP" },
+                        { text: "Erinnerung an regelmäßige Flüssigkeitszufuhr", time: 5, personnelType: "PP" }
+                    ],
+                    "teilweise unterstützung (toilettengang)": [
+                        { text: "Sicherstellung des rechtzeitigen Zugangs zur Toilette", time: 10, personnelType: "PP" },
+                        { text: "Begleitung und Hilfestellung bei Bedarf", time: 10, personnelType: "PP" }
+                    ],
+                    "umfassende unterstützung (waschen)": [
+                        { text: "Vollständige Übernahme der Grundpflege (Ganzkörperwäsche im Bett/am Waschbecken)", time: 25, personnelType: "PP" },
+                        { text: "Tägliche Hautinspektion zur Dekubitusprophylaxe", time: 5, personnelType: "PP" },
+                        { text: "Professionelle Mund- und Zahnpflege", time: 5, personnelType: "PP" }
+                    ],
+                    "umfassende unterstützung (kleiden)": [
+                        { text: "Vollständige Übernahme des An- und Auskleidens unter Berücksichtigung der Gelenkstellung", time: 20, personnelType: "PP" },
+                        { text: "Auswahl von bequemer und funktionaler Kleidung", time: 5, personnelType: "PP" }
+                    ],
+                    "umfassende unterstützung (essen/trinken)": [
+                        { text: "Gezielte Mundpflege nach jeder Mahlzeit", time: 10, personnelType: "PP" },
+                        { text: "Kontrolle der Schluckfähigkeit und Anpassung der Kostform (z.B. püriert, angedickt)", time: 10, personnelType: "PP" },
+                        { text: "Sicherstellung der Nahrungs- und Flüssigkeitsaufnahme (ggf. über Sondenernährung)", time: 20, personnelType: "PP" }
+                    ],
+                    "umfassende unterstützung (toilettengang)": [
+                        { text: "Regelmäßige Kontrolle und Wechsel von Inkontinenzmaterial", time: 10, personnelType: "PP" },
+                        { text: "Umfassende Intimpflege und Hautschutz", time: 10, personnelType: "PP" },
+                        { text: "Führen eines detaillierten Ausscheidungsprotokolls", time: 5, personnelType: "PP" }
+                    ],
+                    "komplett übernommen": [
+                        { text: "Umfassende Übernahme aller Aspekte der Grundpflege (Körperpflege, Kleiden, Essen/Trinken, Ausscheidung)", time: 45, personnelType: "PP" },
+                        { text: "Sicherstellung höchster Komfort und Würde des Patienten", time: 10, personnelType: "PP" },
+                        { text: "Kontinuierliche Überwachung von Vitalzeichen und Hautzustand", time: 5, personnelType: "PP" }
+                    ]
+                },
+                "duschen_haeufigkeit": {
+                    "täglich": [{ text: "Tägliche Ganzkörperwäsche unter der Dusche mit vollständiger Unterstützung", time: 20, personnelType: "PP" }],
+                    "2x wöchentlich": [{ text: "Zweimal wöchentlich Ganzkörperwäsche unter der Dusche mit Unterstützung", time: 20, personnelType: "PP" }],
+                    "1x wöchentlich": [{ text: "Einmal wöchentlich Ganzkörperwäsche unter der Dusche mit Unterstützung", time: 20, personnelType: "PP" }],
+                    "nach bedarf": [{ text: "Duschen nach individuellem Bedarf und Wunsch mit Unterstützung", time: 20, personnelType: "PP" }],
+                    "nicht möglich": [{ text: "Alternative Ganzkörperwäsche im Bett oder am Waschbecken", time: 25, personnelType: "PP" }]
+                },
+                "baden_haeufigkeit": {
+                    "1x wöchentlich": [{ text: "Einmal wöchentlich Baden mit vollständiger Unterstützung", time: 30, personnelType: "PP" }],
+                    "2x wöchentlich": [{ text: "Zweimal wöchentlich Baden mit vollständiger Unterstützung", time: 30, personnelType: "PP" }],
+                    "nach bedarf": [{ text: "Baden nach individuellem Bedarf und Wunsch mit Unterstützung", time: 30, personnelType: "PP" }],
+                    "nicht möglich": [{ text: "Alternative Ganzkörperwäsche im Bett oder am Waschbecken", time: 25, personnelType: "PP" }]
+                },
+                "hauswirtschaftliche_unterstuetzung": {
+                    "einkauf": [{ text: "Einkauf von Lebensmitteln und Haushaltswaren nach Bedarfsliste", time: 45, personnelType: "HWP" }],
+                    "wohnungsreinigung": [{ text: "Reinigung der Küche, des Bades und der Wohnräume", time: 60, personnelType: "HWP" }],
+                    "wäschepflege": [{ text: "Wäsche waschen, trocknen, zusammenlegen und wegräumen", time: 50, personnelType: "HWP" }],
+                    "mahlzeiten zubereiten": [{ text: "Zubereitung einer warmen Mahlzeit und/oder Brotmahlzeiten", time: 30, personnelType: "HWP" }],
+                    "müllentsorgung": [{ text: "Leeren und Entsorgen des Hausmülls und Wertstoffen", time: 10, personnelType: "HWP" }],
+                    "begleitung außer haus": [{ text: "Begleitung zu Arztterminen, Behördengängen oder Freizeitaktivitäten", time: 60, personnelType: "HWP" }],
+                    "gartenarbeit": [{ text: "Leichte Gartenarbeit (Blumen gießen, Unkraut jäten)", time: 30, personnelType: "HWP" }],
+                    "tierversorgung": [{ text: "Fütterung und Wasserwechsel von Haustieren, kurzer Spaziergang mit Hund", time: 20, personnelType: "HWP" }],
+                    "botengänge": [{ text: "Erledigung von Botengängen (Post, Apotheke, Bank)", time: 30, personnelType: "HWP" }],
+                    "fenster putzen": [{ text: "Reinigung der Fenster", time: 60, personnelType: "HWP" }],
+                    "bettwäsche wechseln": [{ text: "Wechseln der kompletten Bettwäsche", time: 20, personnelType: "HWP" }],
+                    "haustiere füttern": [{ text: "Fütterung der Haustiere und Kontrolle des Wassers", time: 10, personnelType: "HWP" }]
+                },
+                "hauswirtschaftliche_frequenz": {
+                    "täglich": { multiplier: 7, text: "täglich" },
+                    "mehrmals wöchentlich": { multiplier: 3, text: "mehrmals wöchentlich" }, // Annahme: 3x/Woche
+                    "wöchentlich": { multiplier: 1, text: "wöchentlich" },
+                    "2x wöchentlich": { multiplier: 2, text: "2x wöchentlich" },
+                    "1x wöchentlich": { multiplier: 1, text: "1x wöchentlich" },
+                    "monatlich": { multiplier: 0.25, text: "monatlich" }, // Annahme: 1x/Monat (1/4 Woche)
+                    "nach bedarf": { multiplier: 0.5, text: "nach Bedarf (geschätzt 0.5x wöchentlich)" } // Annahme: 0.5x/Woche
+                },
+                "soziale_beziehungen": {
+                    "sehr aktiv": [{ text: "Förderung der Teilnahme an sozialen Aktivitäten und Hobbys", time: 15, personnelType: "PP" }],
+                    "eingeschränkt aber selbstständig": [{ text: "Motivation zu sozialen Aktivitäten und Anbieten von Einzelgesprächen", time: 15, personnelType: "PP" }],
+                    "wenig kontakte": [{ text: "Gezielte Förderung von Kontakten zu Familie und Freunden (z.B. Videotelefonie)", time: 15, personnelType: "PP" }],
+                    "sozial isoliert": [{ text: "Einbindung sozialer Dienste und intensivere psychosoziale Betreuung", time: 20, personnelType: "PFK" }],
+                    "keine kontakte": [{ text: "Regelmäßige Begleitung und persönliche Betreuung (Spaziergänge, Vorlesen)", time: 30, personnelType: "PP" }]
+                },
+                "wohnen": {
+                    "eigenes zuhause (alleine)": [
+                        { text: "Beratung zu Wohnraumanpassung und Organisation häuslicher Hilfen", time: 15, personnelType: "PFK" },
+                        { text: "Anleitung zur Nutzung technischer Hilfsmittel (Hausnotruf)", time: 10, personnelType: "PFK" }
+                    ],
+                    "eigenes zuhause (mit partner/ehepartner)": [
+                        { text: "Beratung zu Entlastungsangeboten für den Partner", time: 15, personnelType: "PFK" },
+                        { text: "Unterstützung bei der Koordination von Pflegeleistungen und Familienaufgaben", time: 10, personnelType: "PFK" }
+                    ],
+                    "eigenes zuhause (mit angehörigen)": [
+                        { text: "Beratung und Schulung der Angehörigen in pflegerischen Maßnahmen", time: 20, personnelType: "PFK" },
+                        { text: "Unterstützung bei der Organisation von Entlastungsangeboten", time: 15, personnelType: "PFK" }
+                    ],
+                    "betreutes wohnen": [
+                        { text: "Unterstützung bei der Inanspruchnahme der angebotenen Leistungen und Aktivitäten", time: 10, personnelType: "PP" }
+                    ],
+                    "senioren-wg": [
+                        { text: "Förderung der sozialen Interaktion und Unterstützung bei Konfliktlösung", time: 15, personnelType: "PP" }
+                    ],
+                    "pflegeheim (einzelzimmer)": [ // In AP Kontext: Beratung für Umzug
+                        { text: "Beratung zu den Vorteilen eines Einzelzimmers im Pflegeheim", time: 10, personnelType: "PFK" }
+                    ],
+                    "pflegeheim (mehrbettzimmer)": [ // In AP Kontext: Beratung für Umzug
+                        { text: "Beratung zu den Besonderheiten eines Mehrbettzimmers im Pflegeheim", time: 10, personnelType: "PFK" }
+                    ],
+                    "krankenhaus": [ // In AP Kontext: Überleitungspflege
+                        { text: "Koordination der Überleitungspflege nach Krankenhausaufenthalt", time: 15, personnelType: "PFK" }
+                    ]
+                },
+                "krankheiten": {
+                    "adipositas": [{ text: "Ernährungsberatung und Diätplan einhalten, Bewegung fördern, Hautpflege in Hautfalten", time: 40, personnelType: "PFK" }],
+                    "aids": [{ text: "Medikamenteneinnahme unterstützen, Symptomlinderung, psychosoziale Betreuung", time: 45, personnelType: "PFK" }],
+                    "akute niereninsuffizienz": [{ text: "Flüssigkeitsbilanzierung, Vitalzeichenkontrolle, Medikamentenanpassung", time: 30, personnelType: "PFK" }],
+                    "akute pankreatitis": [{ text: "Nahrungskarenz, Schmerzmanagement, Flüssigkeitsbilanzierung", time: 35, personnelType: "PFK" }],
+                    "akute respiratorische insuffizienz": [{ text: "Atemunterstützung, Lagerung zur Atemoptimierung, Sekretmanagement", time: 45, personnelType: "PFK" }],
+                    "alkoholismus": [{ text: "Entzugsunterstützung, psychosoziale Betreuung, Ernährungsoptimierung", time: 45, personnelType: "PFK" }],
+                    "allergien": [{ text: "Allergenkarenz sicherstellen, Notfallmedikation schulen, Aufklärung", time: 35, personnelType: "PFK" }],
+                    "als": [{ text: "Atemunterstützung, Schlucktraining, Physiotherapie, Kommunikationshilfen", time: 70, personnelType: "PFK" }],
+                    "angina pectoris": [{ text: "Ruhe bei Anfall, Nitroglycerin-Gabe, Vitalzeichenkontrolle, Patientenaufklärung", time: 25, personnelType: "PFK" }],
+                    "anämie": [{ text: "Ernährung fördern, Symptombeobachtung, Medikamentengabe", time: 25, personnelType: "PFK" }],
+                    "anorexie": [{ text: "Mahlzeitenüberwachung, Gewichtskontrolle, psychosoziale Unterstützung", time: 50, personnelType: "PFK" }],
+                    "angststörung": [{ text: "Beruhigende Umgebung, Gesprächsangebote, Entspannungstechniken", time: 40, personnelType: "PFK" }],
+                    "apoplex": [{ text: "Siehe Schlaganfall", time: 0, personnelType: "PFK" }],
+                    "appendizitis": [{ text: "Nahrungskarenz, Schmerzmanagement, postoperative Wundversorgung", time: 35, personnelType: "PFK" }],
+                    "arthritris": [{ text: "Schmerzmanagement, Gelenkschonung, Physiotherapie", time: 35, personnelType: "PFK" }],
+                    "arthrose": [{ text: "Gelenkschonende Mobilisation, Schmerzmanagement, Hilfsmittelberatung", time: 35, personnelType: "PFK" }],
+                    "asthma": [{ text: "Atemgymnastik, Notfallmedikation schulen, Sauerstoffgabe", time: 30, personnelType: "PFK" }],
+                    "atherosklerose": [{ text: "Herzgesunde Ernährung, Bewegung fördern, Medikamentengabe", time: 30, personnelType: "PFK" }],
+                    "blasenentzündung": [{ text: "Flüssigkeitszufuhr fördern, Hygiene anleiten, Medikamentengabe", time: 20, personnelType: "PFK" }],
+                    "bluthochdruck": [{ text: "Blutdruckkontrolle, Medikamentengabe, Ernährungsberatung", time: 30, personnelType: "PFK" }],
+                    "bursitis": [{ text: "Ruhigstellung, Kühlung, Schmerzmanagement, Physiotherapie", time: 30, personnelType: "PFK" }],
+                    "copd": [{ text: "Atemtherapie, Sauerstoffgabe, Sekretmanagement, Raucherentwöhnung", time: 45, personnelType: "PFK" }],
+                    "chronische bronchitis": [{ text: "Atemgymnastik, Schleimlösung, Inhalationstherapie", time: 35, personnelType: "PFK" }],
+                    "chronische niereninsuffizienz": [{ text: "Flüssigkeitsbilanzierung, Diätplan, Blutdruckkontrolle", time: 40, personnelType: "PFK" }],
+                    "chronische schmerzen": [{ text: "Schmerzmedikation, physikalische Therapie, Entspannungstechniken", time: 40, personnelType: "PFK" }],
+                    "chronische wunden": [{ text: "Verbandswechsel, Wundreinigung, Druckentlastung, Ernährungsberatung", time: 50, personnelType: "PFK" }],
+                    "colitis ulcerosa": [{ text: "Symptomlinderung, Ernährungsberatung, Medikamentengabe", time: 40, personnelType: "PFK" }],
+                    "darmkrebs": [{ text: "Ernährungsberatung, Stomaversorgung, Schmerzmanagement", time: 55, personnelType: "PFK" }],
+                    "darmverschluss": [{ text: "Nahrungskarenz, Magensonde, Beobachtung, OP-Vorbereitung", time: 40, personnelType: "PFK" }],
+                    "demenz": [{ text: "Gedächtnistraining, Orientierungshilfen, Validation, Flüssigkeits-/Nahrungsaufnahme sichern", time: 55, personnelType: "PFK" }],
+                    "depression": [{ text: "Tagesstruktur, Gesprächsführung, soziale Kontakte fördern, Medikamentengabe", time: 55, personnelType: "PFK" }],
+                    "diabetes": [{ text: "Regelmäßige Blutzuckermessung nach ärztlicher Anordnung und Dokumentation", time: 5, personnelType: "PFK" },
+                                 { text: "Insulingabe/Medikamentengabe sicherstellen und Anwendung schulen", time: 10, personnelType: "PFK" },
+                                 { text: "Ernährungsberatung und Einhaltung des Diätplans überwachen (Kohlenhydrate, Fette)", time: 15, personnelType: "PFK" },
+                                 { text: "Hautinspektion, besonders an Füßen, zur Früherkennung von Neuropathie und Wunden", time: 10, personnelType: "PFK" },
+                                 { text: "Schulung zur Selbstkontrolle, Notfallsituationen (Hypo-/Hyperglykämie) und Fußpflege", time: 15, personnelType: "PFK" }],
+                    "typ-1-diabetes": [{ text: "Regelmäßige Blutzuckermessung nach ärztlicher Anordnung und Dokumentation", time: 5, personnelType: "PFK" },
+                                       { text: "Insulingabe/Medikamentengabe sicherstellen und Anwendung schulen", time: 10, personnelType: "PFK" },
+                                       { text: "Ernährungsberatung und Einhaltung des Diätplans überwachen (Kohlenhydrate, Fette)", time: 15, personnelType: "PFK" },
+                                       { text: "Hautinspektion, besonders an Füßen, zur Früherkennung von Neuropathie und Wunden", time: 10, personnelType: "PFK" },
+                                       { text: "Schulung zur Selbstkontrolle, Notfallsituationen (Hypo-/Hyperglykämie) und Fußpflege", time: 15, personnelType: "PFK" }],
+                    "typ-2-diabetes": [{ text: "Regelmäßige Blutzuckermessung nach ärztlicher Anordnung und Dokumentation", time: 5, personnelType: "PFK" },
+                                       { text: "Insulingabe/Medikamentengabe sicherstellen und Anwendung schulen", time: 10, personnelType: "PFK" },
+                                       { text: "Ernährungsberatung und Einhaltung des Diätplans überwachen (Kohlenhydrate, Fette)", time: 15, personnelType: "PFK" },
+                                       { text: "Hautinspektion, besonders an Füßen, zur Früherkennung von Neuropathie und Wunden", time: 10, personnelType: "PFK" },
+                                       { text: "Schulung zur Selbstkontrolle, Notfallsituationen (Hypo-/Hyperglykämie) und Fußpflege", time: 15, personnelType: "PFK" }],
+                    "epilepsie": [{ text: "Anfallprotokoll, Sicherheitsmaßnahmen, Medikamentengabe, Angehörigeninformation", time: 50, personnelType: "PFK" }],
+                    "gallensteine": [{ text: "Schmerzmanagement, Nahrungskarenz, Beobachtung, OP-Vorbereitung", time: 40, personnelType: "PFK" }],
+                    "gastritis": [{ text: "Schonende Ernährung, Medikamentengabe, Stressreduktion", time: 30, personnelType: "PFK" }],
+                    "gicht": [{ text: "Schmerzmanagement, Ernährungsberatung, Flüssigkeitszufuhr", time: 35, personnelType: "PFK" }],
+                    "glaukom": [{ text: "Augentropfen-Gabe, Sehhilfen, Patienten-Schulung, Augenarzt-Begleitung", time: 40, personnelType: "PFK" }],
+                    "hepatitis": [{ text: "Hygienemaßnahmen, Leberschonende Kost, Beobachtung, Medikamentengabe", time: 35, personnelType: "PFK" }],
+                    "herzinfarkt": [{ text: "Ruhe, Sauerstoffgabe, Schmerzmanagement, Vitalzeichenkontrolle, OP-Vorbereitung", time: 45, personnelType: "PFK" }],
+                    "herzinsuffizienz": [{ text: "Herzbettlagerung, Flüssigkeitsüberwachung, Beobachtung, Medikamentengabe", time: 35, personnelType: "PFK" }],
+                    "hyperthyreose": [{ text: "Medikamentengabe, Beobachtung, Ruhe fördern", time: 25, personnelType: "PFK" }],
+                    "hypothyreose": [{ text: "Medikamentengabe, Beobachtung, Laborkontrollen", time: 20, personnelType: "PFK" }],
+                    "inkontinenz": [{ text: "Toilettentraining, Hautpflege, Hilfsmittel bereitstellen, Flüssigkeitsüberwachung", time: 40, personnelType: "PFK" }],
+                    "ischämie": [{ text: "Schmerzmanagement, Lagerung, Hautinspektion, Wärmeanwendungen", time: 25, personnelType: "PFK" }],
+                    "krebs": [{ text: "Symptomlinderung, psychosoziale Unterstützung, Ernährungsberatung, Hautpflege, Begleitung", time: 80, personnelType: "PFK" }],
+                    "leberzirrhose": [{ text: "Flüssigkeitsbilanzierung, Diät, Beobachtung, Medikamentengabe", time: 40, personnelType: "PFK" }],
+                    "lungenentzündung": [{ text: "Atemtherapie, Oberkörperhochlagerung, Flüssigkeitszufuhr, Vitalzeichenkontrolle, Antibiotikagabe", time: 45, personnelType: "PFK" }],
+                    "lungenkrebs": [{ text: "Atemunterstützung, Schmerzmanagement, Ernährungsberatung, psychosoziale Unterstützung, Palliativpflege", time: 75, personnelType: "PFK" }],
+                    "magengeschwür": [{ text: "Schonende Ernährung, Medikamentengabe, Beobachtung auf Blutungen", time: 30, personnelType: "PFK" }],
+                    "migräne": [{ text: "Schmerzmanagement, Reizabschirmung, Triggeridentifikation, Entspannungstechniken", time: 35, personnelType: "PFK" }],
+                    "multiple sklerose": [{ text: "Physiotherapie, Hilfsmittelversorgung, Symptomorientierte Pflege, Sturzprophylaxe", time: 60, personnelType: "PFK" }],
+                    "mukoviszidose": [{ text: "Atemtherapie, Inhalation, Ernährungsberatung, Beobachtung auf Infekte", time: 60, personnelType: "PFK" }],
+                    "myasthenia gravis": [{ text: "Beobachtung Atemschwäche/Schluckstörung, Medikamentengabe, Mahlzeiten anpassen", time: 45, personnelType: "PFK" }],
+                    "nierensteine": [{ text: "Schmerzmanagement, Flüssigkeitszufuhr, Beobachtung, Ausscheidungen durchsieben", time: 30, personnelType: "PFK" }],
+                    "ödeme": [{ text: "Beine hochlagern, Kompressionstherapie, Flüssigkeitsbilanzierung, Hautpflege", time: 30, personnelType: "PFK" }],
+                    "osteomyelitis": [{ text: "Antibiotikatherapie, Wundversorgung, Schmerzmanagement, Beobachtung", time: 45, personnelType: "PFK" }],
+                    "osteoporose": [{ text: "Sturzprophylaxe, Kalzium-/Vitamin D-Förderung, rückenschonende Bewegungen, Schmerzmanagement", time: 40, personnelType: "PFK" }],
+                    "parkinson": [{ text: "Gleichgewichtstraining, Mahlzeiten anpassen, Medikamentenüberwachung, Selbstständigkeitsförderung", time: 50, personnelType: "PFK" }],
+                    "periphere arterielle verschlusskrankheit (pavk)": [{ text: "Gehtraining, Hautinspektion, Rauchstopp-Beratung, Schmerzmanagement", time: 40, personnelType: "PFK" }],
+                    "pneumothorax": [{ text: "Atemunterstützung, Beobachtung, Lagerung, Vorbereitung Thoraxdrainage", time: 30, personnelType: "PFK" }],
+                    "posttraumatische bel.störung (ptbs)": [{ text: "Sichere Umgebung, Gesprächsangebote, Entspannungstechniken, Beobachtung Flashbacks", time: 55, personnelType: "PFK" }],
+                    "psoriasis": [{ text: "Hautpflege, Umgang Juckreiz, psychosoziale Unterstützung, Trigger-Info", time: 35, personnelType: "PFK" }],
+                    "rheuma": [{ text: "Schmerzmanagement, Gelenkschonung, Physiotherapie, Hilfsmittel", time: 45, personnelType: "PFK" }],
+                    "schlaganfall": [{ text: "Physiotherapie, Schlucktraining, Lagerung, Sprachtherapie, neurologische Beobachtung", time: 80, personnelType: "PFK" }],
+                    "schilddrüsenüberfunktion": [{ text: "Medikamentengabe, Beobachtung, Ruhe fördern", time: 25, personnelType: "PFK" }],
+                    "schilddrüsenunterfunktion": [{ text: "Medikamentengabe, Beobachtung, Laborkontrollen", time: 20, personnelType: "PFK" }],
+                    "schizophrenie": [{ text: "Medikamentengabe, Tagesstruktur, soziale Kontakte, Beobachtung Symptome", time: 55, personnelType: "PFK" }],
+                    "sepsis": [{ text: "Vitalzeichenkontrolle, Flüssigkeitsgabe, Antibiotikatherapie, Beobachtung", time: 40, personnelType: "PFK" }],
+                    "sichelzellanämie": [{ text: "Schmerzmanagement, Flüssigkeitszufuhr, Beobachtung Infektionen", time: 30, personnelType: "PFK" }],
+                    "skoliose": [{ text: "Physiotherapie, Korsettversorgung, Schmerzmanagement, Haltungsberatung", time: 35, personnelType: "PFK" }],
+                    "sozialphobie": [{ text: "Angstfreie Umgebung, Expositionstherapie, Entspannungstechniken, therapeutische Unterstützung", time: 50, personnelType: "PFK" }],
+                    "spinalkanalstenose": [{ text: "Schmerzmanagement, physikalische Therapie, Gehübungen, rückenschonendes Verhalten", time: 40, personnelType: "PFK" }],
+                    "thrombose": [{ text: "Kompressionsstrümpfe, Mobilisation, Medikamentengabe, Beobachtung", time: 30, personnelType: "PFK" }],
+                    "tuberkulose": [{ text: "Isolationsmaßnahmen, Medikamentengabe, Symptombeobachtung, Ernährungsberatung", time: 45, personnelType: "PFK" }],
+                    "typus 1 diabetes": [{ text: "Regelmäßige Blutzuckermessung nach ärztlicher Anordnung und Dokumentation", time: 5, personnelType: "PFK" },
+                                       { text: "Insulingabe/Medikamentengabe sicherstellen und Anwendung schulen", time: 10, personnelType: "PFK" },
+                                       { text: "Ernährungsberatung und Einhaltung des Diätplans überwachen (Kohlenhydrate, Fette)", time: 15, personnelType: "PFK" },
+                                       { text: "Hautinspektion, besonders an Füßen, zur Früherkennung von Neuropathie und Wunden", time: 10, personnelType: "PFK" },
+                                       { text: "Schulung zur Selbstkontrolle, Notfallsituationen (Hypo-/Hyperglykämie) und Fußpflege", time: 15, personnelType: "PFK" }],
+                    "typus 2 diabetes": [{ text: "Regelmäßige Blutzuckermessung nach ärztlicher Anordnung und Dokumentation", time: 5, personnelType: "PFK" },
+                                       { text: "Insulingabe/Medikamentengabe sicherstellen und Anwendung schulen", time: 10, personnelType: "PFK" },
+                                       { text: "Ernährungsberatung und Einhaltung des Diätplans überwachen (Kohlenhydrate, Fette)", time: 15, personnelType: "PFK" },
+                                       { text: "Hautinspektion, besonders an Füßen, zur Früherkennung von Neuropathie und Wunden", time: 10, personnelType: "PFK" },
+                                       { text: "Schulung zur Selbstkontrolle, Notfallsituationen (Hypo-/Hyperglykämie) und Fußpflege", time: 15, personnelType: "PFK" }],
+                    "ulkus cruris": [{ text: "Verbandswechsel, Wundreinigung, Kompressionstherapie, Hautpflege", time: 40, personnelType: "PFK" }],
+                    "ulkus": [{ text: "Schmerzmanagement, Wundversorgung, Ernährungsberatung, Beobachtung", time: 30, personnelType: "PFK" }],
+                    "untergewicht": [{ text: "Hochkalorische Ernährung, Gewichtskontrolle, Ernährungsberatung, Beobachtung", time: 40, personnelType: "PFK" }],
+                    "vaskulitis": [{ text: "Medikamentengabe, Beobachtung Haut/Organe, Schmerzmanagement", time: 35, personnelType: "PFK" }],
+                    "venenleiden": [{ text: "Kompressionsstrümpfe, Beine hochlagern, Bewegung, Hautpflege", time: 30, personnelType: "PFK" }],
+                    "verstopfung": [{ text: "Flüssigkeitszufuhr, ballaststoffreiche Ernährung, Bewegung, Medikamentengabe", time: 30, personnelType: "PFK" }],
+                    "virusinfektion": [{ text: "Symptomlinderung, Flüssigkeitszufuhr, Ruhe, Beobachtung Komplikationen", time: 30, personnelType: "PFK" }],
+                    "vorhofflimmern": [{ text: "Medikamentengabe, Vitalzeichenkontrolle, Beobachtung Symptome, Patientenaufklärung", time: 35, personnelType: "PFK" }],
+                    "zoeliakie": [{ text: "Strikte glutenfreie Diät einhalten und Patient/Angehörige schulen", time: 15, personnelType: "PFK" }],
+                    "zystische fibrose": [{ text: "Atemtherapie, Inhalation, Ernährungsberatung, Beobachtung Infekte", time: 60, personnelType: "PFK" }],
+                    "schwindel": [{ text: "Sturzprophylaxe, langsame Bewegungen, Medikamentenüberprüfung, Flüssigkeitszufuhr", time: 30, personnelType: "PFK" }],
+                    "apraxie": [{ text: "Anleitung Handlungsabläufe, visuelle Hilfen, geduldige Übungen, Sicherheit", time: 50, personnelType: "PFK" }],
+                    "aphasie": [{ text: "Sprachförderung, Kommunikationshilfen, einfache Kommunikation, Motivation", time: 45, personnelType: "PFK" }],
+                    "dysphagie": [{ text: "Kostform anpassen, Schlucktraining, Aspirationsprophylaxe, Beobachtung", time: 40, personnelType: "PFK" }],
+                    "kontraktur": [{ text: "Bewegungsübungen, Lagerung, Lagerungshilfsmittel, Hautinspektion", time: 35, personnelType: "PFK" }],
+                    "dekubitus": [{ text: "Druckentlastung, Verbandswechsel, Wundreinigung, Ernährungsberatung, Prophylaxe", time: 50, personnelType: "PFK" }],
+                    "gangstörung": [{ text: "Gangschulung, Gehhilfen, Sturzprophylaxe, Beobachtung", time: 35, personnelType: "PFK" }],
+                    "harnwegsinfekt": [{ text: "Flüssigkeitszufuhr, Medikamentengabe, Hygiene, Symptombeobachtung", time: 20, personnelType: "PFK" }],
+                    "herzrhythmusstörung": [{ text: "Vitalzeichenkontrolle, Medikamentengabe, Symptombeobachtung, Patientenaufklärung", time: 30, personnelType: "PFK" }],
+                    "hyperglykämie": [{ text: "Blutzuckermessung, Insulingabe, Flüssigkeitszufuhr, Ernährungsberatung", time: 30, personnelType: "PFK" }],
+                    "hypoglykämie": [{ text: "Kohlenhydratgabe, Blutzuckermessung, Symptombeobachtung, Schulung", time: 30, personnelType: "PFK" }],
+                    "insomnie": [{ text: "Schlafhygiene, Entspannungstechniken, Medikamentengabe", time: 30, personnelType: "PFK" }],
+                    "kachexie": [{ text: "Hochkalorische Ernährung, Gewichtskontrolle, Ernährungsberatung, Beobachtung", time: 40, personnelType: "PFK" }],
+                    "katarakt": [{ text: "Sehhilfen, Begleitung, OP-Vorbereitung", time: 30, personnelType: "PFK" }],
+                    "kopfschmerzen": [{ text: "Schmerzmanagement, Ruhe, Flüssigkeitszufuhr, Triggeridentifikation", time: 30, personnelType: "PFK" }],
+                    "krampfanfall": [{ text: "Sicherheitsmaßnahmen, Anfallprotokoll, Notfallmedikation, Nachsorge", time: 35, personnelType: "PFK" }],
+                    "mangelernährung": [{ text: "Hochkalorische Ernährung, Gewichtskontrolle, Ernährungsberatung, Beobachtung", time: 40, personnelType: "PFK" }],
+                    "nervenschmerzen": [{ text: "Schmerzmanagement, physikalische Therapie, Hautinspektion, Entspannung", time: 35, personnelType: "PFK" }],
+                    "obstipation": [{ text: "Flüssigkeitszufuhr, ballaststoffreiche Ernährung, Bewegung, Medikamentengabe", time: 30, personnelType: "PFK" }],
+                    "pneumonie": [{ text: "Atemtherapie, Oberkörperhochlagerung, Flüssigkeitszufuhr, Vitalzeichenkontrolle, Antibiotikagabe", time: 45, personnelType: "PFK" }],
+                    "polyneuropathie": [{ text: "Schmerzmanagement, Hautinspektion, Gleichgewichtstraining, Hilfsmittel", time: 45, personnelType: "PFK" }],
+                    "restless legs syndrom": [{ text: "Medikamentengabe, Bewegung, Entspannung, Vermeidung von Triggern", time: 30, personnelType: "PFK" }],
+                    "schlafapnoe": [{ text: "CPAP-Anleitung, Beobachtung, Gewichtsreduktion, Schlafposition", time: 35, personnelType: "PFK" }],
+                    "tinnitus": [{ text: "Ablenkung, Entspannung, Stressreduktion, Begleitung zu Therapie", time: 35, personnelType: "PFK" }],
+                    "tremor": [{ text: "Unterstützung Feinmotorik, Hilfsmittel, Medikamentengabe, Sturzprophylaxe", time: 35, personnelType: "PFK" }],
+                    "verwirrtheitszustand": [{ text: "Reizarme Umgebung, Reorientierung, Flüssigkeits-/Nahrungsaufnahme, Ursachenforschung", time: 45, personnelType: "PFK" }]
+                }
+            }
+        };
+
+        // Definition der Leistungskomplexe und ihrer Kriterien (vereinfacht)
+        const leistungskomplexeDefinition = {
+            // Grundpflege LKs
+            "LK1: Ganzwaschung (im Bett/am Waschbecken)": {
+                criteria: ["umfassende unterstützung (waschen)", "komplett übernommen"],
+                personnel: "PP",
+                estimatedTime: 20 // Beispielzeit für den LK
+            },
+            "LK2: Teilwaschung": {
+                criteria: ["eingeschränkt (waschen)", "teilweise unterstützung (waschen)"],
+                personnel: "PP",
+                estimatedTime: 10
+            },
+            "LK3: Duschen": {
+                criteria: ["duschen_haeufigkeit"],
+                personnel: "PP",
+                estimatedTime: 20
+            },
+            "LK4: Baden": {
+                criteria: ["baden_haeufigkeit"],
+                personnel: "PP",
+                estimatedTime: 25
+            },
+            "LK5: An-/Auskleiden": {
+                criteria: ["eingeschränkt (kleiden)", "teilweise unterstützung (kleiden)", "umfassende unterstützung (kleiden)", "komplett übernommen"],
+                personnel: "PP",
+                estimatedTime: 10
+            },
+            "LK6: Ausscheidung": {
+                criteria: ["eingeschränkt (toilettengang)", "teilweise unterstützung (toilettengang)", "umfassende unterstützung (toilettengang)", "inkontinenz"],
+                personnel: "PP",
+                estimatedTime: 10
+            },
+            "LK7: Ernährung": {
+                criteria: ["eingeschränkt (essen/trinken)", "teilweise unterstützung (essen/trinken)", "umfassende unterstützung (essen/trinken)", "dysphagie"],
+                personnel: "PP",
+                estimatedTime: 15
+            },
+            "LK8: Lagern/Betten": {
+                criteria: ["bettlägerig", "rollstuhlabhängig (passiv)", "kontraktur", "dekubitus"],
+                personnel: "PP",
+                estimatedTime: 15
+            },
+            "LK9: Mundpflege": {
+                criteria: ["eingeschränkt (waschen)", "umfassende unterstützung (waschen)", "komplett übernommen"],
+                personnel: "PP",
+                estimatedTime: 5
+            },
+
+            // Behandlungspflege LKs (Beispiele, stark vereinfacht)
+            "LK10: Medikamentengabe (oral/topisch)": {
+                criteria: ["diabetes", "bluthochdruck", "depression", "epilepsie", "hyperthyreose", "hypothyreose", "asthma", "rheuma", "schizophrenie", "parkinson", "multiple sklerose", "chronische schmerzen", "angststörung", "bipolare störung", "borderline-persönlichkeitsstörung", "burnout-syndrom", "cluster-kopfschmerz", "dermatitis", "dystonie", "endometriose", "fibromyalgie", "gastroösophageale refluxkrankheit (gerd)", "gicht", "glaukom", "hepatitis", "herzinsuffizienz", "impotenz", "influenza", "ischias", "karpaltunnelsyndrom", "kiefergelenksdysfunktion", "laktoseintoleranz", "legionellose", "leukämie", "lupus erythematodes", "lyme-borreliose", "mastozytose", "migräne", "morbus crohn", "morbus wilson", "narkolepsie", "neurodermitis", "nierensteine", "oophoritis", "optikusneuritis", "oraler lichen planus", "orchitis", "osteomalazie", "otitis media", "perikarditis", "peritonitis", "phlebitis", "pneumokoniosen", "poliomyelitis", "polymyalgia rheumatica", "post-polio-syndrom", "präeklampsie", "prostatakarzinom", "pseudogicht", "pulmonale hypertonie", "pyelonephritis", "raynaud-syndrom", "reizdarmsyndrom", "retinoblastom", "retinopathie", "rhabdomyolyse", "rosazea", "rotaviren-infektion", "röteln", "salmonellose", "sarkoidose", "scharlach", "sklerodermie", "spondylitis ankylosans", "struma", "systemischer lupus erythematodes", "tetanus", "thalassämie", "thrombophlebitis", "thrombozytopenie", "tollwut", "tourette-syndrom", "transitorische ischämische attacke (tia)", "trigeminusneuralgie", "trommelfellperforation", "tuberculose", "typhus", "ulcus duodeni", "urtikaria", "uveitis", "varizellen", "vaskuläre demenz", "vitiligo", "vogt-koyanagi-harada-syndrom", "volvulus", "von willebrand-jürgens-syndrom", "wundrose", "zahnschmerzen", "zerebralparese", "zoster", "adhs", "autismus-spektrum-störung", "chronisches fatigue-syndrom", "cystische fibrose", "darmdivertikulose", "darmpolypen", "darmulzera", "diabetische retinopathie", "glomerulonephritis", "hämorrhoiden", "harnwegsinfekt", "herzrhythmusstörung", "hyperglykämie", "hypoglykämie", "insomnie", "kachexie", "krampfanfall", "mangelernährung", "nervenschmerzen", "obstipation", "pneumonie", "polyneuropathie", "restless legs syndrom", "schlafapnoe", "tinnitus", "tremor", "verwirrtheitszustand"],
+                personnel: "PFK",
+                estimatedTime: 5
+            },
+            "LK11: Injektionen (s.c./i.m.)": {
+                criteria: ["diabetes", "multiple sklerose", "anämie", "rheuma", "osteoporose", "hormontherapie", "schmerztherapie"],
+                personnel: "PFK",
+                estimatedTime: 5
+            },
+            "LK12: Blutzuckermessung & Insulin": {
+                criteria: ["diabetes", "hyperglykämie", "hypoglykämie"],
+                personnel: "PFK",
+                estimatedTime: 5
+            },
+            "LK13: Wundversorgung (einfach)": {
+                criteria: ["chronische wunden", "ulkus cruris", "dekubitus", "wundrose", "dermatitis", "psoriasis", "neurodermitis", "hautkrebs", "melanom", "ulkus", "verbrennung", "bisswunde", "schnittwunde", "schürfwunde", "postoperative wundversorgung"],
+                personnel: "PFK",
+                estimatedTime: 10
+            },
+            "LK14: Wundversorgung (komplex)": {
+                criteria: ["nekrotisierende fasziitis", "osteomyelitis", "chronische wunden", "ulkus cruris", "dekubitus"],
+                personnel: "PFK",
+                estimatedTime: 20
+            },
+            "LK15: Kompressionsverbände anlegen/wechseln": {
+                criteria: ["ödeme", "venenleiden", "thrombose", "thrombophlebitis", "ulkus cruris"],
+                personnel: "PFK",
+                estimatedTime: 10
+            },
+            "LK16: Katheterpflege (Blase)": {
+                criteria: ["inkontinenz", "harnwegsinfekt"],
+                personnel: "PFK",
+                estimatedTime: 5
+            },
+            "LK17: Stomaversorgung": {
+                criteria: ["darmkrebs", "colitis ulcerosa", "morbus crohn", "darmverschluss"],
+                personnel: "PFK",
+                estimatedTime: 15
+            },
+            "LK18: Infusionen (s.c.)": {
+                criteria: ["dehydration", "schmerztherapie", "palliative versorgung"],
+                personnel: "PFK",
+                estimatedTime: 10
+            },
+            "LK19: Parenterale Ernährung (Port/PICC)": {
+                criteria: ["mangelernährung", "kachexie", "darmverschluss", "chronische darmerkrankung"],
+                personnel: "PFK",
+                estimatedTime: 20
+            },
+
+            // Hauswirtschaftliche LKs
+            "LK20: Einkauf": {
+                criteria: ["einkauf"],
+                personnel: "HWP",
+                estimatedTime: 45
+            },
+            "LK21: Wohnungsreinigung": {
+                criteria: ["wohnungsreinigung"],
+                personnel: "HWP",
+                estimatedTime: 60
+            },
+            "LK22: Wäschepflege": {
+                criteria: ["wäschepflege"],
+                personnel: "HWP",
+                estimatedTime: 60
+            },
+            "LK23: Mahlzeiten zubereiten": {
+                criteria: ["mahlzeiten zubereiten"],
+                personnel: "HWP",
+                estimatedTime: 30
+            },
+            "LK24: Müllentsorgung": {
+                criteria: ["müllentsorgung"],
+                personnel: "HWP",
+                estimatedTime: 10
+            },
+            "LK25: Begleitung außer Haus": {
+                criteria: ["begleitung außer haus"],
+                personnel: "HWP",
+                estimatedTime: 60
+            }
+        };
+
+
+        // --- Helper Functions ---
+
+        /**
+         * Normalisiert einen String, indem er in Kleinbuchstaben umgewandelt und trimmt.
+         * @param {string} text - Der zu normalisierende String.
+         * @returns {string} - Der normalisierte String.
+         */
+        function normalizeString(text) {
+            return text.toLowerCase().trim();
+        }
+
+        /**
+         * Kapitalisiert den ersten Buchstaben eines Strings und macht den Rest klein.
+         * Spezielle Handhabung für Begriffe in Klammern.
+         * @param {string} text - Der zu kapitalisierende String.
+         * @returns {string} - Der kapitalisierte String.
+         */
+        function capitalizeFirstLetter(text) {
+            if (!text) return '';
+            const parts = text.split('(');
+            let capitalized = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+            if (parts.length > 1) {
+                capitalized += '(' + parts.slice(1).join('('); // Klammerinhalt bleibt unverändert
+            }
+            return capitalized;
+        }
+
+        /**
+         * Konvertiert eine Gesamtminutenanzahl in das hh:mm Format.
+         * @param {number} totalMinutes - Die Gesamtminuten.
+         * @returns {string} - Die formatierte Zeit (hh:mm).
+         */
+        function formatMinutesToHHMM(totalMinutes) {
+            if (totalMinutes < 0) return "00:00";
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const paddedHours = String(hours).padStart(2, '0');
+            const paddedMinutes = String(minutes).padStart(2, '0');
+            return `${paddedHours}:${paddedMinutes}`;
+        }
+
+        /**
+         * Fügt einen Tag für eine ausgewählte Option hinzu.
+         * @param {string} category - Die SIS-Kategorie (z.B. 'krankheiten', 'selbstversorgung', 'hauswirtschaftliche_unterstuetzung').
+         * @param {string} value - Der Wert des ausgewählten Tags.
+         */
+        function addTag(category, value) {
+            const normalizedValue = normalizeString(value);
+            const hiddenInput = document.querySelector(`input[name="${category}"]`);
+            const tagsContainer = document.getElementById(`selected_${category}_tags`);
+
+            // Verhindern von Duplikaten
+            const currentValues = hiddenInput.value.split(',').map(normalizeString).filter(v => v !== '');
+            if (currentValues.includes(normalizedValue)) {
+                return; // Tag existiert bereits
+            }
+
+            // Tag-Element erstellen
+            const tag = document.createElement('span');
+            tag.className = `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${farben[category] ? `bg-[${farben[category]}] text-gray-800` : 'bg-gray-200 text-gray-800'} mr-2 mb-2`;
+            tag.textContent = capitalizeFirstLetter(value);
+
+            // Löschen-Button erstellen
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'ml-2 -mr-0.5 h-4 w-4 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-300 hover:text-gray-700 focus:outline-none';
+            removeButton.innerHTML = '&times;'; // HTML-Entität für das "x"
+            removeButton.onclick = () => removeTag(category, normalizedValue, tag);
+
+            tag.appendChild(removeButton);
+            tagsContainer.appendChild(tag);
+
+            // Hidden Input aktualisieren
+            currentValues.push(normalizedValue);
+            hiddenInput.value = currentValues.join(',');
+
+            // Eingabefeld leeren
+            // document.getElementById(`${category}_input`).value = ''; // Don't clear immediately to allow continuous typing
+        }
+
+        /**
+         * Entfernt einen Tag.
+         * @param {string} category - Die SIS-Kategorie.
+         * @param {string} valueToRemove - Der zu entfernende Wert.
+         * @param {HTMLElement} tagElement - Das zu entfernende Tag-Element.
+         */
+        function removeTag(category, valueToRemove, tagElement) {
+            tagElement.remove(); // Tag aus dem DOM entfernen
+
+            // Hidden Input aktualisieren
+            const hiddenInput = document.querySelector(`input[name="${category}"]`);
+            let currentValues = hiddenInput.value.split(',').map(normalizeString).filter(v => v !== '');
+            currentValues = currentValues.filter(v => v !== valueToRemove);
+            hiddenInput.value = currentValues.join(',');
+        }
+
+        /**
+         * Aktualisiert die Datalist-Optionen und Platzhalter basierend auf dem ausgewählten Setting.
+         */
+        function updateFormForSetting() {
+            const currentSetting = document.getElementById('care_setting').value;
+
+            // Define fields that need dynamic updates
+            const fieldsToUpdate = [
+                "kognitive_fähigkeiten", "mobilität", "krankheiten", "selbstversorgung",
+                "duschen_haeufigkeit", "baden_haeufigkeit", "hauswirtschaftliche_unterstuetzung",
+                "hauswirtschaftliche_frequenz", "soziale_beziehungen", "wohnen"
+            ];
+
+            // Clear all tags and hidden inputs for multi-select fields
+            document.getElementById('selected_krankheiten_tags').innerHTML = '';
+            document.querySelector('input[name="krankheiten"]').value = '';
+            document.getElementById('selected_selbstversorgung_tags').innerHTML = '';
+            document.querySelector('input[name="selbstversorgung"]').value = '';
+            document.getElementById('selected_hauswirtschaftliche_unterstuetzung_tags').innerHTML = '';
+            document.querySelector('input[name="hauswirtschaftliche_unterstuetzung"]').value = '';
+
+
+            fieldsToUpdate.forEach(fieldName => {
+                const datalist = document.getElementById(`${fieldName}_list`);
+                const inputElement = document.getElementById(`${fieldName}_input`) || document.querySelector(`input[name="${fieldName}"]`);
+
+                if (datalist) {
+                    datalist.innerHTML = ''; // Clear existing options
+                    const options = schlagwoerter[currentSetting][fieldName];
+                    if (options) {
+                        options.forEach(option => {
+                            const opt = document.createElement('option');
+                            opt.value = option;
+                            datalist.appendChild(opt);
+                        });
+                    }
+                }
+
+                // Update placeholders
+                if (inputElement) {
+                    const placeholderMap = {
+                        "kognitive_fähigkeiten": {
+                            "ambulante_pflege": "z.B. klar und adäquat, leicht eingeschränkt",
+                            "pflegeheim": "z.B. klar und adäquat, moderater demenzieller Wandel",
+                            "krankenhaus": "z.B. klar und adäquat, stark desorientiert"
+                        },
+                        "mobilität": {
+                            "ambulante_pflege": "z.B. völlig selbstständig, eingeschränkt (Hilfsmittel)",
+                            "pflegeheim": "z.B. gehfähig mit Unterstützung, bettlägerig",
+                            "krankenhaus": "z.B. gehfähig mit Unterstützung, bettlägerig"
+                        },
+                        "krankheiten": {
+                            "ambulante_pflege": "z.b. diabetes, demenz, arthrose",
+                            "pflegeheim": "z.b. diabetes, demenz, inkontinenz",
+                            "krankenhaus": "z.b. sepsis, lungenentzündung, schlaganfall"
+                        },
+                        "selbstversorgung": {
+                            "ambulante_pflege": "z.b. eingeschränkt (Waschen), komplett übernommen",
+                            "pflegeheim": "z.b. umfassende Unterstützung (Essen/Trinken), komplett übernommen",
+                            "krankenhaus": "z.b. eingeschränkt (Waschen), komplett übernommen"
+                        },
+                        "duschen_haeufigkeit": {
+                            "ambulante_pflege": "z.b. täglich, 2x wöchentlich",
+                            "pflegeheim": "z.b. täglich, 1x wöchentlich",
+                            "krankenhaus": "z.b. nach Bedarf, nicht möglich"
+                        },
+                        "baden_haeufigkeit": {
+                            "ambulante_pflege": "z.b. 1x wöchentlich, nicht möglich",
+                            "pflegeheim": "z.b. 1x wöchentlich, nach Bedarf",
+                            "krankenhaus": "z.b. nicht möglich"
+                        },
+                        "hauswirtschaftliche_unterstuetzung": {
+                            "ambulante_pflege": "z.b. Einkauf, Wohnungsreinigung",
+                            "pflegeheim": "z.b. Einkauf, Wäschepflege",
+                            "krankenhaus": "Nicht relevant im Krankenhaus"
+                        },
+                        "hauswirtschaftliche_frequenz": {
+                            "ambulante_pflege": "z.b. wöchentlich, 2x wöchentlich",
+                            "pflegeheim": "z.b. täglich, mehrmals wöchentlich",
+                            "krankenhaus": "Nicht relevant im Krankenhaus"
+                        },
+                        "soziale_beziehungen": {
+                            "ambulante_pflege": "z.b. sehr aktiv, wenig Kontakte",
+                            "pflegeheim": "z.b. sehr aktiv, sozial isoliert",
+                            "krankenhaus": "z.b. eingeschränkt aber selbstständig, keine Kontakte"
+                        },
+                        "wohnen": {
+                            "ambulante_pflege": "z.b. eigenes Zuhause (alleine), betreutes Wohnen",
+                            "pflegeheim": "z.b. Pflegeheim (Einzelzimmer), Senioren-WG",
+                            "krankenhaus": "z.b. Krankenhaus"
+                        }
+                    };
+                    inputElement.placeholder = placeholderMap[fieldName][currentSetting] || ''; // Set placeholder or empty string
+                }
+            });
+
+            // Toggle visibility for Hauswirtschaftliche Unterstützung sections
+            const hauswirtschaftlicheSection = document.getElementById('hauswirtschaftliche_unterstuetzung_section');
+            const hauswirtschaftlicheFrequenzSection = document.getElementById('hauswirtschaftliche_frequenz_section');
+
+            if (currentSetting === 'krankenhaus') {
+                hauswirtschaftlicheSection.style.display = 'none';
+                hauswirtschaftlicheFrequenzSection.style.display = 'none';
+            } else {
+                hauswirtschaftlicheSection.style.display = 'block';
+                hauswirtschaftlicheFrequenzSection.style.display = 'block';
+            }
+        }
+
+
+        /**
+         * Generiert den HTML-Output für den Pflegeprozess basierend auf den SIS-Daten.
+         * @param {Object} sisData - Ein Objekt, das die SIS-Kategorien und ihre Werte enthält.
+         * @returns {string} - Der generierte HTML-String.
+         */
+        function generatePflegeprozess(sisData) {
+            const currentCareSetting = sisData['care_setting'];
+            const currentPflegeMassnahmen = pflegeMassnahmen[currentCareSetting];
+
+            // Mapping for display names of settings
+            const settingDisplayNames = {
+                "ambulante_pflege": "Ambulante Pflege",
+                "pflegeheim": "Alten-/Pflegeheim",
+                "krankenhaus": "Krankenhaus"
+            };
+
+            let pflegeprozessHtml = `<div class="generated-output p-6 mt-8 rounded-lg shadow-lg max-w-xl mx-auto bg-white border border-gray-200">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Pflegebericht für ${settingDisplayNames[currentCareSetting]}</h2>
+                <p class="text-gray-700 mb-4"><strong>Datum:</strong> ${new Date().toLocaleDateString('de-DE')}</p>
+            `;
+
+            if (sisData['wunsch_besuchszeit']) {
+                pflegeprozessHtml += `<p class="text-gray-700 mb-4"><strong>Wunsch-Besuchszeit:</strong> ${sisData['wunsch_besuchszeit']} Uhr</p>`;
+            }
+            if (sisData['age']) {
+                pflegeprozessHtml += `<p class="text-gray-700 mb-4"><strong>Alter:</strong> ${sisData['age']} Jahre</p>`;
+            }
+            if (sisData['pflegegrad']) {
+                pflegeprozessHtml += `<p class="text-gray-700 mb-4"><strong>Pflegegrad:</strong> ${sisData['pflegegrad']}</p>`;
+            }
+
+            pflegeprozessHtml += `<h3 class="text-xl font-bold text-gray-800 mb-4">Strukturierte Informationssammlung (SIS) und Maßnahmenplanung:</h3>`;
+
+            const orderedThemes = [
+                "kognitive_fähigkeiten",
+                "mobilität",
+                "krankheiten",
+                "selbstversorgung",
+                "duschen_haeufigkeit",
+                "baden_haeufigkeit",
+                "hauswirtschaftliche_unterstuetzung",
+                "soziale_beziehungen",
+                "wohnen"
+            ];
+
+            let totalTimePflegepersonal = 0;
+            let totalTimePflegefachkraft = 0;
+            let totalTimeHauswirtschaft = 0;
+            let totalTimeTherapeuten = 0;
+            let totalTimeSozialdienst = 0;
+
+            const suggestedLeistungskomplexe = new Set();
+            let hwpFrequencyMultiplier = 1; // Default to weekly if not specified or for other settings
+
+            // Determine HWP frequency multiplier
+            if (currentCareSetting === 'ambulante_pflege' || currentCareSetting === 'pflegeheim') {
+                const hwpFrequenzValue = normalizeString(sisData['hauswirtschaftliche_frequenz']);
+                const freqDef = pflegeMassnahmen.ambulante_pflege.hauswirtschaftliche_frequenz[hwpFrequenzValue]; // Use ambulante_pflege for multiplier def
+                if (freqDef) {
+                    hwpFrequencyMultiplier = freqDef.multiplier;
+                }
+            }
+
+            let allMeasuresFlowingText = ''; // Accumulator for the final flowing text summary
+
+            for (const thema of orderedThemes) {
+                // Skip hauswirtschaftliche_unterstuetzung if in Krankenhaus setting
+                if (thema === 'hauswirtschaftliche_unterstuetzung' && currentCareSetting === 'krankenhaus') {
+                    continue;
+                }
+                // Skip hauswirtschaftliche_frequenz as it's handled as a multiplier
+                if (thema === 'hauswirtschaftliche_frequenz') {
+                    continue;
+                }
+
+                // Ensure currentPflegeMassnahmen[thema] exists before accessing it
+                if (!currentPflegeMassnahmen[thema]) {
+                    console.warn(`No measures defined for theme "${thema}" in setting "${currentCareSetting}". Skipping.`);
+                    continue; // Skip this theme if no measures are defined for the current setting
+                }
+
+
+                if (sisData.hasOwnProperty(thema) && sisData[thema] !== '' && thema !== 'wunsch_besuchszeit' && thema !== 'care_setting' && sisData[thema] !== 'nicht relevant') { // Check if value is not empty or "nicht relevant"
+                    const capitalizedThema = thema.replace(/_/g, ' ')
+                                                .split(' ')
+                                                .map(word => capitalizeFirstLetter(word))
+                                                .join(' ');
+
+                    let currentCategoryTimePP = 0;
+                    let currentCategoryTimePFK = 0;
+                    let currentCategoryTimeHWP = 0;
+                    let currentCategoryTimeTherapeuten = 0;
+                    let currentCategoryTimeSozialdienst = 0;
+
+                    let measuresListHtml = ''; // Use a list for measures within the theme section
+                    let displayValue = '';
+                    let themeSummaryText = ''; // For the overall flowing text summary (initialized here)
+
+                    // Handle multi-select fields (Krankheiten, Selbstversorgung, Hauswirtschaftliche Unterstützung)
+                    if (thema === "krankheiten" || thema === "selbstversorgung" || thema === "hauswirtschaftliche_unterstuetzung") {
+                        const rawValues = sisData[thema];
+                        const selectedValues = rawValues.split(',').map(item => normalizeString(item)).filter(item => item !== '');
+                        displayValue = selectedValues.map(i => capitalizeFirstLetter(i)).join(', ');
+
+                        if (selectedValues.length > 0) {
+                            measuresListHtml += `<strong class="text-gray-800 text-lg mt-2 block">Maßnahmen:</strong><ul class="list-disc list-inside pl-4 mt-2 text-gray-700">`;
+                            themeSummaryText += `Im Bereich ${capitalizedThema} wurden folgende Aspekte identifiziert: ${displayValue}. Geplante Maßnahmen hierzu sind: `;
+                            selectedValues.forEach(val => {
+                                if (currentPflegeMassnahmen[thema][val]) { // Check if specific measure exists for the value
+                                    measuresListHtml += `<li><strong>${capitalizeFirstLetter(val)}:</strong></li>`;
+                                    measuresListHtml += `<ul class="list-disc list-inside pl-4 mt-1 text-gray-700">`; // Nested list for sub-measures
+                                    const measures = currentPflegeMassnahmen[thema][val];
+                                    measures.forEach(measure => {
+                                        measuresListHtml += `<li>${measure.text} [${measure.personnelType}]</li>`;
+                                        themeSummaryText += `${measure.text} [${measure.personnelType}]; `; // Add to flowing text
+                                        if (measure.personnelType === "PP") currentCategoryTimePP += measure.time;
+                                        else if (measure.personnelType === "PFK") currentCategoryTimePFK += measure.time;
+                                        else if (measure.personnelType === "HWP") currentCategoryTimeHWP += measure.time;
+                                        else if (measure.personnelType === "Therapeut") currentCategoryTimeTherapeuten += measure.time;
+                                        else if (measure.personnelType === "Sozialdienst") currentCategoryTimeSozialdienst += measure.time;
+
+                                        if (currentCareSetting === 'ambulante_pflege') {
+                                            for (const lkName in leistungskomplexeDefinition) {
+                                                if (leistungskomplexeDefinition[lkName].criteria.includes(val)) {
+                                                    suggestedLeistungskomplexe.add(lkName);
+                                                }
+                                            }
+                                        }
+                                    });
+                                    measuresListHtml += `</ul>`;
+                                } else {
+                                    measuresListHtml += `<li class="text-gray-700 mt-2">Für "${capitalizeFirstLetter(val)}" sind keine spezifischen Maßnahmen in diesem Setting hinterlegt.</li>`;
+                                    themeSummaryText += `Für "${capitalizeFirstLetter(val)}" sind keine spezifischen Maßnahmen hinterlegt. `;
+                                }
+                            });
+                            measuresListHtml += `</ul>`;
+                            themeSummaryText = themeSummaryText.trim(); // Trim trailing space
+                            if (themeSummaryText.endsWith(';')) themeSummaryText = themeSummaryText.slice(0, -1); // Remove last semicolon
+                            themeSummaryText += ". ";
+                        } else {
+                            themeSummaryText = `Für das Themenfeld ${capitalizedThema} wurden keine spezifischen Informationen oder Maßnahmen ausgewählt. `;
+                        }
+                    } else { // Standard-Textfelder
+                        const wert = normalizeString(sisData[thema]);
+                        displayValue = wert ? capitalizeFirstLetter(wert) : 'Keine Angabe';
+
+                        if (wert && currentPflegeMassnahmen[thema][wert]) { // Check if specific measure exists for the value
+                            measuresListHtml += `<strong class="text-gray-800 text-lg mt-2 block">Maßnahmen:</strong><ul class="list-disc list-inside pl-4 mt-2 text-gray-700">`;
+                            themeSummaryText += `Im Bereich ${capitalizedThema} wird der Zustand als "${capitalizeFirstLetter(wert)}" eingeschätzt. Geplante Maßnahmen umfassen: `;
+                            const measures = currentPflegeMassnahmen[thema][wert];
+                            measures.forEach(measure => {
+                                measuresListHtml += `<li>${measure.text} [${measure.personnelType}]</li>`;
+                                themeSummaryText += `${measure.text} [${measure.personnelType}]; `; // Add to flowing text
+                                if (measure.personnelType === "PP") currentCategoryTimePP += measure.time;
+                                else if (measure.personnelType === "PFK") currentCategoryTimePFK += measure.time;
+                                else if (measure.personnelType === "HWP") currentCategoryTimeHWP += measure.time;
+                                else if (measure.personnelType === "Therapeut") currentCategoryTimeTherapeuten += measure.time;
+                                else if (measure.personnelType === "Sozialdienst") currentCategoryTimeSozialdienst += measure.time;
+
+                                if (currentCareSetting === 'ambulante_pflege') {
+                                    for (const lkName in leistungskomplexeDefinition) {
+                                        if (leistungskomplexeDefinition[lkName].criteria.includes(wert)) {
+                                            suggestedLeistungskomplexe.add(lkName);
+                                        }
+                                    }
+                                }
+                            });
+                            themeSummaryText = themeSummaryText.trim(); // Trim trailing space
+                            if (themeSummaryText.endsWith(';')) themeSummaryText = themeSummaryText.slice(0, -1); // Remove last semicolon
+                            themeSummaryText += ". ";
+                            measuresListHtml += `</ul>`;
+                        } else if (wert) {
+                            themeSummaryText = `Im Bereich ${capitalizedThema} wird der Zustand als "${capitalizeFirstLetter(wert)}" eingeschätzt. Für diesen Wert sind in diesem Setting keine spezifischen Maßnahmen hinterlegt. `;
+                        } else {
+                            themeSummaryText = `Für das Themenfeld ${capitalizedThema} wurden keine Informationen eingegeben. `;
+                        }
+                    }
+
+                    // Apply HWP frequency multiplier if applicable
+                    if (thema === "hauswirtschaftliche_unterstuetzung" && hwpFrequencyMultiplier !== 1) {
+                        currentCategoryTimeHWP *= hwpFrequencyMultiplier;
+                    }
+
+
+                    pflegeprozessHtml += `<div class="p-4 mb-4 rounded-lg border border-gray-300 shadow-sm" style="background-color: ${farben[thema] || "#e2e8f0"};">
+                        <strong class="text-gray-800 text-lg">${capitalizedThema}:</strong>
+                        <span class="text-gray-700 text-base">${displayValue}</span><br>`; // Display selected value(s) in header
+                    pflegeprozessHtml += measuresListHtml; // Add the list of measures
+
+                    const totalCategoryTime = currentCategoryTimePP + currentCategoryTimePFK + currentCategoryTimeHWP + currentCategoryTimeTherapeuten + currentCategoryTimeSozialdienst;
+                    if (totalCategoryTime > 0) {
+                         pflegeprozessHtml += `<p class="text-sm font-semibold text-gray-800 mt-4">Geschätzte Gesamtdauer für ${capitalizedThema}:`;
+                         if (currentCategoryTimePP > 0) pflegeprozessHtml += ` PP ${formatMinutesToHHMM(currentCategoryTimePP)}`;
+                         if (currentCategoryTimePFK > 0) pflegeprozessHtml += `, PFK ${formatMinutesToHHMM(currentCategoryTimePFK)}`;
+                         if (currentCategoryTimeHWP > 0) pflegeprozessHtml += `, HWP ${formatMinutesToHHMM(currentCategoryTimeHWP)}`;
+                         if (currentCategoryTimeTherapeuten > 0) pflegeprozessHtml += `, Therapeuten ${formatMinutesToHHMM(currentCategoryTimeTherapeuten)}`;
+                         if (currentCategoryTimeSozialdienst > 0) pflegeprozessHtml += `, Sozialdienst ${formatMinutesToHHMM(currentCategoryTimeSozialdienst)}`;
+                         pflegeprozessHtml += ` (Gesamt: ${formatMinutesToHHMM(totalCategoryTime)})</p>`;
+                    }
+                    pflegeprozessHtml += `</div>`;
+
+                    totalTimePflegepersonal += currentCategoryTimePP;
+                    totalTimePflegefachkraft += currentCategoryTimePFK;
+                    totalTimeHauswirtschaft += currentCategoryTimeHWP;
+                    totalTimeTherapeuten += currentCategoryTimeTherapeuten;
+                    totalTimeSozialdienst += currentCategoryTimeSozialdienst;
+
+                    allMeasuresFlowingText += themeSummaryText; // Add to the overall flowing text
+                }
+            }
+
+            // Gesamtübersicht der Zeiten nach Personalart
+            pflegeprozessHtml += `<div class="p-6 mt-8 rounded-lg shadow-lg max-w-xl mx-auto bg-blue-100 border border-blue-300">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Gesamtübersicht der geschätzten Zeiten:</h3>
+                <p class="text-lg text-gray-700"><strong>Pflegepersonal (PP):</strong> ${formatMinutesToHHMM(totalTimePflegepersonal)}</p>`;
+            if (totalTimePflegefachkraft > 0) {
+                pflegeprozessHtml += `<p class="text-lg text-gray-700"><strong>Pflegefachkraft (PFK):</strong> ${formatMinutesToHHMM(totalTimePflegefachkraft)}</p>`;
+            }
+            if (totalTimeHauswirtschaft > 0) {
+                pflegeprozessHtml += `<p class="text-lg text-gray-700"><strong>Hauswirtschaftspersonal (HWP):</strong> ${formatMinutesToHHMM(totalTimeHauswirtschaft)}</p>`;
+            }
+            if (totalTimeTherapeuten > 0) {
+                pflegeprozessHtml += `<p class="text-lg text-gray-700"><strong>Therapeuten:</strong> ${formatMinutesToHHMM(totalTimeTherapeuten)}</p>`;
+            }
+            if (totalTimeSozialdienst > 0) {
+                pflegeprozessHtml += `<p class="text-lg text-gray-700"><strong>Sozialdienst:</strong> ${formatMinutesToHHMM(totalTimeSozialdienst)}</p>`;
+            }
+            pflegeprozessHtml += `<p class="text-xl font-bold text-gray-900 mt-4">Gesamtzeit aller Leistungen: ${formatMinutesToHHMM(totalTimePflegepersonal + totalTimePflegefachkraft + totalTimeHauswirtschaft + totalTimeTherapeuten + totalTimeSozialdienst)}</p>
+            </div>`;
+
+            // Vorschlag für Leistungskomplexe (nur für Ambulante Pflege)
+            if (currentCareSetting === 'ambulante_pflege' && suggestedLeistungskomplexe.size > 0) {
+                pflegeprozessHtml += `<div class="p-6 mt-4 rounded-lg shadow-lg max-w-xl mx-auto bg-green-100 border border-green-300">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Vorgeschlagene Leistungskomplexe (LK) für Ambulante Pflege:</h3>
+                    <ul class="list-disc list-inside pl-4 text-gray-700">`;
+                suggestedLeistungskomplexe.forEach(lkName => {
+                    const lkDef = leistungskomplexeDefinition[lkName];
+                    if (lkDef) {
+                        pflegeprozessHtml += `<li><strong>${lkName}</strong> (Geschätzte LK-Zeit: ${formatMinutesToHHMM(lkDef.estimatedTime)} - Personal: ${lkDef.personnel})</li>`;
+                    }
+                });
+                pflegeprozessHtml += `</ul>
+                    <p class="text-sm text-gray-600 mt-4">Hinweis: Die hier angezeigten LK-Zeiten sind pauschale Schätzwerte. Die tatsächliche Abrechnung erfolgt nach den vertraglich vereinbarten Leistungskomplexen.</p>
+                </div>`;
+            } else if (currentCareSetting !== 'ambulante_pflege') {
+                 pflegeprozessHtml += `<div class="p-6 mt-4 rounded-lg shadow-lg max-w-xl mx-auto bg-gray-100 border border-gray-300">
+                    <p class="text-gray-700">Leistungskomplexe sind primär für die ambulante Pflege relevant und werden in diesem Setting nicht separat ausgewiesen.</p>
+                </div>`;
+            }
+
+            // Finaler zusammenhängender Fließtext aller Maßnahmen
+            pflegeprozessHtml += `<div class="p-6 mt-8 rounded-lg shadow-lg max-w-xl mx-auto bg-yellow-50 border border-yellow-300">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Zusammenfassende Pflegeplanung:</h3>
+                <p class="text-gray-700 text-base leading-relaxed">${allMeasuresFlowingText}</p>
+                <button id="summarizeButton" class="mt-4 w-full bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition duration-300 ease-in-out shadow-md">
+                    Zusammenfassung generieren ✨
+                </button>
+                <div id="summaryOutput" class="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200 hidden">
+                    <p class="text-gray-700">Lade Zusammenfassung...</p>
+                </div>
+                <button id="exportPdfButton" class="mt-4 w-full bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition duration-300 ease-in-out shadow-md">
+                    Als PDF exportieren 📄
+                </button>
+            </div>`;
+
+
+            pflegeprozessHtml += `</div>`; // Close generated-output div
+            return pflegeprozessHtml;
+        }
+
+        // --- Event Listeners and Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('sis-form');
+            const outputDiv = document.getElementById('output');
+            const careSettingSelect = document.getElementById('care_setting');
+
+            // Initialize form based on default setting
+            updateFormForSetting();
+
+            // Event listener for care setting change
+            careSettingSelect.addEventListener('change', updateFormForSetting);
+
+            // Generic function to handle input for multi-select fields (Krankheiten, Selbstversorgung, Hauswirtschaft)
+            function handleMultiSelectInput(inputElement, category) {
+                inputElement.addEventListener('input', () => {
+                    const inputValue = inputElement.value.trim();
+                    const normalizedInputValue = normalizeString(inputValue);
+                    const currentSettingSchlagwoerter = schlagwoerter[careSettingSelect.value][category];
+
+                    // Only add tag if there are options for this category in the current setting
+                    if (currentSettingSchlagwoerter) {
+                        const isMatch = currentSettingSchlagwoerter.map(s => normalizeString(s)).includes(normalizedInputValue);
+                        if (isMatch) {
+                            addTag(category, inputValue);
+                            inputElement.value = '';
+                            inputElement.focus();
+                        }
+                    }
+                });
+
+                inputElement.addEventListener('change', () => {
+                    const inputValue = inputElement.value.trim();
+                    const normalizedInputValue = normalizeString(inputValue);
+                    const currentSettingSchlagwoerter = schlagwoerter[careSettingSelect.value][category];
+                     if (currentSettingSchlagwoerter) {
+                        const isMatch = currentSettingSchlagwoerter.map(s => normalizeString(s)).includes(normalizedInputValue);
+                        if (isMatch) {
+                            addTag(category, inputValue);
+                            inputElement.value = '';
+                            inputElement.focus();
+                        }
+                    }
+                });
+            }
+
+            // Apply multi-select logic to relevant inputs
+            handleMultiSelectInput(document.getElementById('krankheiten_input'), 'krankheiten');
+            handleMultiSelectInput(document.getElementById('selbstversorgung_input'), 'selbstversorgung');
+            handleMultiSelectInput(document.getElementById('hauswirtschaftliche_unterstuetzung_input'), 'hauswirtschaftliche_unterstuetzung');
+
+
+            // Formular-Submit-Handler
+            form.addEventListener('submit', async function(event) { // Added 'async' keyword
+                event.preventDefault(); // Verhindert das Neuladen der Seite
+
+                const sisData = {};
+                // Sammle Daten von allen Textfeldern
+                form.querySelectorAll('input[type="text"], input[type="number"], input[type="time"], select').forEach(input => { // Added input[type="number"]
+                    // Überprüfen, ob es sich um ein Mehrfachauswahlfeld handelt, das über ein Hidden-Input gesteuert wird
+                    if (input.id.endsWith('_input') && (input.id === 'krankheiten_input' || input.id === 'selbstversorgung_input' || input.id === 'hauswirtschaftliche_unterstuetzung_input')) {
+                        // Diese werden über die Hidden-Inputs gesammelt
+                    } else {
+                        sisData[input.name] = input.value;
+                    }
+                });
+
+                // Sammle Daten von den versteckten Feldern für Mehrfachauswahl
+                sisData['krankheiten'] = document.querySelector('input[name="krankheiten"]').value;
+                sisData['selbstversorgung'] = document.querySelector('input[name="selbstversorgung"]').value;
+                sisData['hauswirtschaftliche_unterstuetzung'] = document.querySelector('input[name="hauswirtschaftliche_unterstuetzung"]').value;
+
+
+                // Generiere den Pflegeprozess und zeige ihn an
+                const generatedHtml = generatePflegeprozess(sisData);
+                outputDiv.innerHTML = generatedHtml;
+
+                // Add event listener for the new summarize button
+                const summarizeButton = document.getElementById('summarizeButton');
+                const summaryOutputDiv = document.getElementById('summaryOutput');
+                if (summarizeButton) {
+                    summarizeButton.onclick = async () => {
+                        summaryOutputDiv.classList.remove('hidden');
+                        summaryOutputDiv.innerHTML = '<p class="text-gray-700">Lade Zusammenfassung...</p>';
+                        const fullReportText = outputDiv.querySelector('.bg-yellow-50 p').textContent; // Get the flowing text
+
+                        // Construct the prompt with age and care level
+                        let prompt = `Fasse den folgenden Pflegebericht prägnant und professionell zusammen.`;
+                        if (sisData.age && sisData.age !== '') {
+                            prompt += ` Berücksichtige dabei, dass die Person ${sisData.age} Jahre alt ist.`;
+                        }
+                        if (sisData.pflegegrad && sisData.pflegegrad !== '') {
+                            prompt += ` Der Pflegegrad ist ${sisData.pflegegrad}.`;
+                        }
+                        prompt += ` Konzentriere dich auf die wichtigsten Diagnosen, den Pflegebedarf und die geplanten Maßnahmen. Der Bericht lautet: "${fullReportText}"`;
+
+
+                        try {
+                            let chatHistory = [];
+                            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                            const payload = { contents: chatHistory };
+                            const apiKey = "";
+                            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                            const response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+
+                            const result = await response.json();
+                            if (result.candidates && result.candidates.length > 0 &&
+                                result.candidates[0].content && result.candidates[0].content.parts &&
+                                result.candidates[0].content.parts.length > 0) {
+                                const summaryText = result.candidates[0].content.parts[0].text;
+                                summaryOutputDiv.innerHTML = `<h4 class="font-semibold text-gray-800 mb-2">Zusammenfassung:</h4><p class="text-gray-700">${summaryText}</p>`;
+                            } else {
+                                summaryOutputDiv.innerHTML = `<p class="text-red-600">Fehler beim Generieren der Zusammenfassung: Keine gültige Antwort vom Modell erhalten.</p>`;
+                            }
+                        } catch (error) {
+                            console.error('Fehler beim Generieren der Zusammenfassung:', error);
+                            summaryOutputDiv.innerHTML = `<p class="text-red-600">Fehler beim Generieren der Zusammenfassung: ${error.message}. Bitte versuchen Sie es erneut.</p>`;
+                        }
+                    };
+                }
+
+                // Add event listener for PDF export button
+                const exportPdfButton = document.getElementById('exportPdfButton');
+                if (exportPdfButton) {
+                    exportPdfButton.onclick = async () => {
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF();
+
+                        // Get the content to be exported (the entire output div)
+                        const content = outputDiv;
+
+                        // Use html2canvas to render the HTML content to a canvas
+                        html2canvas(content, { scale: 2 }).then(canvas => { // Increased scale for better resolution
+                            const imgData = canvas.toDataURL('image/png');
+                            const imgWidth = 210; // A4 width in mm
+                            const pageHeight = 297; // A4 height in mm
+                            const imgHeight = canvas.height * imgWidth / canvas.width;
+                            let heightLeft = imgHeight;
+
+                            let position = 0;
+
+                            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+
+                            while (heightLeft >= 0) {
+                                position = heightLeft - imgHeight;
+                                doc.addPage();
+                                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                                heightLeft -= pageHeight;
+                            }
+                            doc.save('Pflegebericht.pdf');
+                        }).catch(error => {
+                            console.error("Fehler beim Exportieren der PDF:", error);
+                            alert("Fehler beim Exportieren der PDF. Bitte versuchen Sie es erneut.");
+                        });
+                    };
+                }
+
+            });
+        });
+    </script>
+</body>
+</html>
